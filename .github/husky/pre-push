@@ -1,0 +1,14 @@
+#!/bin/sh
+
+[ -n "$CI" ] && exit 0
+
+. "$(dirname "$0")/_/husky.sh"
+
+if [[ $(git status --porcelain -s) != "" ]]; then
+  echo "\n😵 Uncommitted changes found 😵"
+  echo "Please \`git add\` and \`git commit\` or \`git stash -u\` them before pushing!\n"
+
+  exit 1
+fi
+
+exit 0
