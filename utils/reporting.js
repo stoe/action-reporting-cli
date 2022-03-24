@@ -356,15 +356,14 @@ class Reporting {
       auth: token,
       throttle: {
         onRateLimit: (retryAfter, options) => {
-          console.warn(
-            yellow(`Request quota exhausted for request ${options.method} ${options.url}
-Retrying after ${retryAfter} seconds!`)
-          )
-
+          console.warn(yellow(`Request quota exhausted for request ${options.method} ${options.url}`))
+          console.warn(yellow(`Retrying after ${retryAfter} seconds!`))
           return true
         },
-        onAbuseLimit: (_, options) => {
-          console.warn(red(`Abuse detected for request ${options.method} ${options.url}`))
+        onSecondaryRateLimit: (retryAfter, options) => {
+          console.warn(red(`Secondary rate limit hit detected for request ${options.method} ${options.url}`))
+          console.warn(yellow(`Retrying after ${retryAfter} seconds!`))
+          return true
         }
       }
     })
