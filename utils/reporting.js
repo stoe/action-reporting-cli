@@ -209,13 +209,15 @@ const findActions = async (octokit, {owner, repo, getPermissions = false, getUse
   const actions = []
 
   try {
-    const {data} = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+    // https://docs.github.com/en/rest/reference/actions#list-repository-workflows
+    const {
+      data: {workflows}
+    } = await octokit.request('GET /repos/{owner}/{repo}/actions/workflows', {
       owner,
-      repo,
-      path: '.github/workflows'
+      repo
     })
 
-    for await (const wf of data) {
+    for await (const wf of workflows) {
       const info = {owner, repo, workflow: wf.path}
 
       if (getPermissions || getUses) {
@@ -252,7 +254,7 @@ const findActions = async (octokit, {owner, repo, getPermissions = false, getUse
       actions.push(info)
 
       // wait 2.5s between calls
-      wait(2500)
+      await wait(2500)
     }
   } catch (error) {
     // do nothing
