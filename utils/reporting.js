@@ -472,7 +472,7 @@ ${dim('(this could take a while...)')}
    * @param {Action[]}  actions
    * @param {string[]}  unique
    *
-   * @returns {boolean}
+   * @throws {Error}
    */
   async saveCsv(actions, unique) {
     const {csvPath, getPermissions, getUses, isUnique} = this
@@ -516,12 +516,8 @@ ${dim('(this could take a while...)')}
         await writeFileSync(csvUsesPathUnique, csvUsesUnique)
       }
     } catch (error) {
-      console.error(red(error.message))
-
-      return false
+      throw error
     }
-
-    return true
   }
 
   /**
@@ -531,7 +527,7 @@ ${dim('(this could take a while...)')}
    * @param {Action[]}  actions
    * @param {string[]}  unique
    *
-   * @returns {boolean}
+   * @throws {Error}
    */
   async saveJSON(actions, unique) {
     const {jsonPath, getPermissions, getUses, isUnique} = this
@@ -557,12 +553,8 @@ ${dim('(this could take a while...)')}
         await writeFileSync(jsonUsesPathUnique, JSON.stringify(unique, null, 2))
       }
     } catch (error) {
-      console.error(red(error.message), error.stack)
-
-      return false
+      throw error
     }
-
-    return true
   }
 
   /**
@@ -572,7 +564,7 @@ ${dim('(this could take a while...)')}
    * @param {Action[]}  actions
    * @param {string[]}  unique
    *
-   * @returns {boolean}
+   * @throws {Error}
    */
   async saveMarkdown(actions, unique) {
     const {mdPath, getPermissions, getUses, isUnique} = this
@@ -637,12 +629,8 @@ ${dim('(this could take a while...)')}
         await writeFileSync(mdUsesPathUnique, mdUniqueStr)
       }
     } catch (error) {
-      console.error(red(error.message))
-
-      return false
+      throw error
     }
-
-    return true
   }
 }
 
