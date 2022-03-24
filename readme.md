@@ -4,7 +4,7 @@
 
 > CLI to report on GitHub Actions
 
-## Usage
+## Usage example
 
 ```sh
 $ npx @stoe/action-reporting-cli [--options]
