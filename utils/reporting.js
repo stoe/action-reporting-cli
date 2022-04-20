@@ -418,11 +418,11 @@ ${dim('(this could take a while...)')}
     }
 
     const actions = []
-    // let i = 0
+    let i = 0
     for await (const {owner: org, repo} of repos) {
-      // const ul = i === repos.length - 1 ? '└─' : '├─'
+      const ul = i === repos.length - 1 ? '└─' : '├─'
 
-      // console.log(`  ${ul} ${org}/${repo}`)
+      console.log(`  ${ul} ${org}/${repo}`)
       const res = await findActions(octokit, {
         owner: org,
         repo,
@@ -436,7 +436,7 @@ ${dim('(this could take a while...)')}
       // wait 2.5s between repositories to help spread out the requests
       wait(2500)
 
-      // i++
+      i++
     }
 
     let unique = []
