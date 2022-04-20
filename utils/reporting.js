@@ -306,7 +306,7 @@ const recursiveSearch = (search, key, results = []) => {
 
     if (typeof value === 'object' && k !== key) {
       recursiveSearch(value, key, res)
-    } else if (k === key) {
+    } else if (typeof value === 'string' && k === key) {
       res.push(value)
     }
   }
