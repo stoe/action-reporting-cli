@@ -489,7 +489,7 @@ ${dim('(this could take a while...)')}
         actions.map(i => {
           const csvData = [i.owner, i.repo, i.workflow]
           if (getPermissions) csvData.push(JSON.stringify(i.permissions, null, 0))
-          if (getUses) csvData.push(i.uses.join(', '))
+          if (getUses && i.uses) csvData.push(i.uses.join(', '))
 
           return csvData
         }),
