@@ -591,7 +591,7 @@ ${dim('(this could take a while...)')}
         let mdStr = `${owner} | ${repo} | [${workflow}](${workflowLink})`
 
         if (getPermissions) {
-          mdStr += ` | ${permissions.length > 0 ? `\`${JSON.stringify(permissions, null, 0)}\`` : 'n/a'}`
+          mdStr += ` | ${permissions && permissions.length > 0 ? `\`${JSON.stringify(permissions, null, 0)}\`` : 'n/a'}`
         }
 
         if (getUses) {
