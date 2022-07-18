@@ -444,7 +444,7 @@ ${dim('(this could take a while...)')}
       const _unique = []
 
       actions.map(({uses}) => {
-        if (uses.length > 0) _unique.push(...uses)
+        if (uses && uses.length > 0) _unique.push(...uses)
       })
 
       unique = [...new Set(_unique)].sort((a, b) => {
