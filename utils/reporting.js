@@ -314,6 +314,41 @@ const recursiveSearch = (search, key, results = []) => {
   return res
 }
 
+/**
+ * @private
+ * @function getUnique
+ *
+ * @param {Action[]}  actions
+ *
+ * @returns {string[]|null}
+ */
+const getUnique = actions => {
+  const _unique = []
+  let unique = []
+
+  actions.map(({uses}) => {
+    if (uses && uses.length > 0) _unique.push(...uses)
+  })
+
+  unique = [...new Set(_unique)].sort((a, b) => {
+    // Use toUpperCase() to ignore character casing
+    const A = a.toUpperCase()
+    const B = b.toUpperCase()
+
+    let comparison = 0
+
+    if (A > B) {
+      comparison = 1
+    } else if (A < B) {
+      comparison = -1
+    }
+
+    return comparison
+  })
+
+  return unique
+}
+
 class Reporting {
   /**
    * @param {object}          options
@@ -369,13 +404,16 @@ class Reporting {
         }
       }
     })
+
+    this.actions = []
+    this.unique = []
   }
 
   /**
    * @async
    * @function get
    *
-   * @returns {{actions: Action[], unique: string[]}}
+   * @returns Action[]
    */
   async get() {
     const {octokit, enterprise, owner, repository, getPermissions, getUses, isUnique, isExcluded} = this
@@ -439,50 +477,28 @@ ${dim('(this could take a while...)')}
       i++
     }
 
-    let unique = []
-    if (isUnique !== false) {
-      const _unique = []
+    this.actions = actions
 
-      actions.map(({uses}) => {
-        if (uses && uses.length > 0) _unique.push(...uses)
-      })
-
-      unique = [...new Set(_unique)].sort((a, b) => {
-        // Use toUpperCase() to ignore character casing
-        const A = a.toUpperCase()
-        const B = b.toUpperCase()
-
-        let comparison = 0
-
-        if (A > B) {
-          comparison = 1
-        } else if (A < B) {
-          comparison = -1
-        }
-
-        return comparison
-      })
+    if (getUses && isUnique !== false) {
+      this.unique = getUnique(actions)
     }
 
-    return {actions, unique}
+    return actions
   }
 
   /**
    * @async
    * @function saveCsv
    *
-   * @param {Action[]}  actions
-   * @param {string[]}  unique
-   *
    * @throws {Error}
    */
-  async saveCsv(actions, unique) {
-    const {csvPath, getPermissions, getUses, isUnique} = this
+  async saveCsv() {
+    const {actions, csvPath, getPermissions, getUses} = this
 
     try {
       const header = ['owner', 'repo', 'workflow']
       if (getPermissions) header.push('permissions')
-      if (getUses) header.push('actions')
+      if (getUses) header.push('uses')
 
       // actions report
       const csv = stringify(
@@ -501,22 +517,37 @@ ${dim('(this could take a while...)')}
 
       console.log(`saving report CSV in ${blue(`${csvPath}`)}`)
       await writeFileSync(csvPath, csv)
+    } catch (error) {
+      throw error
+    }
+  }
 
-      // actions uses unique report
-      if (getUses && isUnique !== false) {
-        const csvUsesPathUnique = csvPath.replace('.csv', '-unique.csv')
-        const csvUsesUnique = stringify(
-          unique.map(i => [i]),
-          {
-            header: true,
-            columns: ['action'],
-            record_delimiter: ',\n'
-          }
-        )
+  /**
+   * @async
+   * @function saveCsvUnique
+   *
+   * @throws {Error}
+   */
+  async saveCsvUnique() {
+    const {csvPath, getUses, isUnique, unique} = this
+    const pathUnique = csvPath.replace('.csv', '-unique.csv')
 
-        console.log(`saving unique uses report CSV in ${blue(`${csvUsesPathUnique}`)}`)
-        await writeFileSync(csvUsesPathUnique, csvUsesUnique)
-      }
+    if (!getUses || isUnique === false) {
+      return
+    }
+
+    try {
+      // actions report
+      const csv = stringify(
+        unique.map(i => [i]),
+        {
+          header: true,
+          columns: ['uses']
+        }
+      )
+
+      console.log(`saving unique report CSV in ${blue(`${pathUnique}`)}`)
+      await writeFileSync(pathUnique, csv)
     } catch (error) {
       throw error
     }
@@ -526,13 +557,10 @@ ${dim('(this could take a while...)')}
    * @async
    * @function saveJSON
    *
-   * @param {Action[]}  actions
-   * @param {string[]}  unique
-   *
    * @throws {Error}
    */
-  async saveJSON(actions, unique) {
-    const {jsonPath, getPermissions, getUses, isUnique} = this
+  async saveJSON() {
+    const {actions, jsonPath, getPermissions, getUses} = this
 
     try {
       const json = actions.map(i => {
@@ -546,14 +574,28 @@ ${dim('(this could take a while...)')}
 
       console.log(`saving report JSON in ${blue(`${jsonPath}`)}`)
       await writeFileSync(jsonPath, JSON.stringify(json, null, 2))
+    } catch (error) {
+      throw error
+    }
+  }
 
-      // actions uses unique report
-      if (getUses && isUnique !== false) {
-        const jsonUsesPathUnique = jsonPath.replace('.json', '-unique.json')
+  /**
+   * @async
+   * @function saveJSONUnique
+   *
+   * @throws {Error}
+   */
+  async saveJSONUnique() {
+    const {jsonPath, getUses, isUnique, unique} = this
+    const pathUnique = jsonPath.replace('.json', '-unique.json')
 
-        console.log(`saving unique uses report JSON in ${blue(`${jsonUsesPathUnique}`)}`)
-        await writeFileSync(jsonUsesPathUnique, JSON.stringify(unique, null, 2))
-      }
+    if (!getUses || isUnique === false) {
+      return
+    }
+
+    try {
+      console.log(`saving unique report JSON in ${blue(`${pathUnique}`)}`)
+      await writeFileSync(pathUnique, JSON.stringify(unique, null, 2))
     } catch (error) {
       throw error
     }
@@ -563,13 +605,10 @@ ${dim('(this could take a while...)')}
    * @async
    * @function saveMarkdown
    *
-   * @param {Action[]}  actions
-   * @param {string[]}  unique
-   *
    * @throws {Error}
    */
-  async saveMarkdown(actions, unique) {
-    const {mdPath, getPermissions, getUses, isUnique} = this
+  async saveMarkdown() {
+    const {actions, mdPath, getPermissions, getUses} = this
 
     try {
       let header = 'owner | repo | workflow'
@@ -581,7 +620,7 @@ ${dim('(this could take a while...)')}
       }
 
       if (getUses) {
-        header += ' | actions'
+        header += ' | uses'
         headerBreak += ' | ---'
       }
 
@@ -602,7 +641,7 @@ ${dim('(this could take a while...)')}
               const [a, v] = action.split('@')
               const [o, r] = a.split('/')
 
-              usesLinks.push(`[${action}](https://github.com/${o}/${r}) (\`${v}\`)`)
+              usesLinks.push(`[${o}/${r}](https://github.com/${o}/${r}) (\`${v}\`)`)
             }
           }
 
@@ -617,19 +656,43 @@ ${dim('(this could take a while...)')}
 
       console.log(`saving report markdown in ${blue(`${mdPath}`)}`)
       await writeFileSync(mdPath, md)
+    } catch (error) {
+      throw error
+    }
+  }
 
-      // actions uses unique report
-      if (getUses && isUnique !== false) {
-        const mdUsesPathUnique = mdPath.replace('.md', '-unique.md')
+  /**
+   * @async
+   * @function saveMarkdownUnique
+   *
+   * @throws {Error}
+   */
+  async saveMarkdownUnique() {
+    const {mdPath, getUses, isUnique, unique} = this
+    const pathUnique = mdPath.replace('.md', '-unique.md')
 
-        const mdUniqueStr = `| actions |
-| --- |
-| ${unique.join(' |\n| ')} |
+    if (!getUses || isUnique === false) {
+      return
+    }
+
+    try {
+      const uses = unique.map(i => {
+        if (i.indexOf('./') === -1) {
+          const [a, v] = i.split('@')
+          const [o, r] = a.split('/')
+
+          return `[${o}/${r}](https://github.com/${o}/${r}) (\`${v}\`)`
+        } else {
+          return i
+        }
+      })
+
+      const md = `### Unique GitHub Actions \`uses\`
+- ${uses.join('\n- ')}
 `
 
-        console.log(`saving unique uses report JSON in ${blue(`${mdUsesPathUnique}`)}`)
-        await writeFileSync(mdUsesPathUnique, mdUniqueStr)
-      }
+      console.log(`saving unique report MD in ${blue(`${pathUnique}`)}`)
+      await writeFileSync(pathUnique, md)
     } catch (error) {
       throw error
     }
