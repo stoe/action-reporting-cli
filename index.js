@@ -175,21 +175,24 @@ const cli = meow(
     })
 
     // get report
-    const {actions, unique} = await report.get()
+    await report.get()
 
     // create and save CSV
     if (csv) {
-      report.saveCsv(actions, unique)
+      await report.saveCsv()
+      await report.saveCsvUnique()
     }
 
     // create and save markdown
     if (md) {
-      report.saveMarkdown(actions, unique)
+      await report.saveMarkdown()
+      await report.saveMarkdownUnique()
     }
 
     // create and save JSON
     if (json) {
-      report.saveJSON(actions, unique)
+      await report.saveJSON()
+      await report.saveJSONUnique()
     }
   } catch (error) {
     console.error(`\n  ${red('ERROR: %s')}`, error.message)
