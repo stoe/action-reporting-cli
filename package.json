@@ -1,6 +1,6 @@
 {
   "name": "@stoe/action-reporting-cli",
-  "version": "2.0.0-beta.1",
+  "version": "2.0.0",
   "type": "module",
   "description": "CLI to report on GitHub Actions",
   "keywords": [
@@ -51,7 +51,7 @@
   },
   "devDependencies": {
     "@github/prettier-config": "^0.0.4",
-    "@octokit/openapi-types": "^13.5.0",
+    "@octokit/openapi-types": "^13.6.0",
     "eslint": "^8.23.0",
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-github": "^4.3.7",
