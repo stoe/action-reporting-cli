@@ -488,6 +488,17 @@ ${dim('(this could take a while...)')}
 
   /**
    * @async
+   * @function set
+   *
+   * @param {Action[]}  actions
+   */
+  async set(actions) {
+    this.actions = actions
+    this.unique = getUnique(actions)
+  }
+
+  /**
+   * @async
    * @function saveCsv
    *
    * @throws {Error}
