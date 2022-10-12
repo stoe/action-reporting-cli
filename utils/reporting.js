@@ -197,22 +197,22 @@ const findActions = async (
       const {
         owner: {login},
         name,
-        isArchived: archived,
-        isFork: fork,
+        // isArchived: archived,
+        // isFork: fork,
         object: workflows
       } = r
 
-      // skip archived or forked repositories
-      if (archived || fork) continue
+      // // skip archived or forked repositories
+      // if (archived || fork) continue
 
       // skip if we don't have content
-      if (!workflows || workflows?.entries.length < 1) continue
+      if (!workflows?.entries) continue
 
       for (const wf of workflows.entries) {
-        const info = {owner: login, repo: name, workflow: wf.path}
-
         // skip if not .yml or .yaml
         if (!['.yml', '.yaml'].includes(wf.extension)) continue
+
+        const info = {owner: login, repo: name, workflow: wf.path}
 
         const content = wf.object?.text
 
