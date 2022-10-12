@@ -13,9 +13,7 @@ const MyOctokit = Octokit.plugin(throttling, paginateRest)
 const ORG_QUERY = `query ($enterprise: String!, $cursor: String = null) {
   enterprise(slug: $enterprise) {
     organizations(first: 25, after: $cursor) {
-      nodes {
-        login
-      }
+      nodes { login }
       pageInfo {
         hasNextPage
         endCursor
@@ -66,128 +64,90 @@ const getOrganizations = async (octokit, enterprise, cursor = null, records = []
 }
 
 /**
- * @typedef {object} Repository
- *
- * @property {string} owner
- * @property {string} repo
- *
- * @readonly
- */
-
-const ORG_REPO_QUERY = `query ($owner: String!, $cursor: String = null) {
-  organization(login: $owner) {
-    repositories(
-      affiliations: OWNER
-      isFork: false
-      orderBy: { field: PUSHED_AT, direction: DESC }
-      first: 100
-      after: $cursor
-    ) {
-      nodes {
-        name
-        owner {
-          login
-        }
-        isArchived
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-}`
-
-const USER_REPO_QUERY = `query ($owner: String!, $cursor: String = null) {
-  user(login: $owner) {
-    repositories(
-      affiliations: OWNER
-      isFork: false
-      orderBy: { field: PUSHED_AT, direction: DESC }
-      first: 100
-      after: $cursor
-    ) {
-      nodes {
-        name
-        owner {
-          login
-        }
-        isArchived
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-      }
-    }
-  }
-}`
-
-/**
- * @async
- * @private
- * @function getRepositories
- *
- * @param {import('@octokit/core').Octokit} octokit
- * @param {Organization}                    owner
- * @param {string}                          [type='organization']
- * @param {string}                          [cursor=null]
- * @param {Repository[]}                    [records=[]]
- *
- * @returns {Repository[]}
- */
-const getRepositories = async (octokit, owner, type = 'organization', cursor = null, records = []) => {
-  let nodes = []
-  let pageInfo = {
-    hasNextPage: false,
-    endCursor: null
-  }
-
-  if (type === 'organization') {
-    const {
-      organization: {repositories}
-    } = await octokit.graphql(ORG_REPO_QUERY, {owner, cursor})
-
-    nodes = repositories.nodes
-    pageInfo = repositories.pageInfo
-  } else if (type === 'user') {
-    const {
-      user: {repositories}
-    } = await octokit.graphql(USER_REPO_QUERY, {owner, cursor})
-
-    nodes = repositories.nodes
-    pageInfo = repositories.pageInfo
-  }
-
-  nodes.map(data => {
-    // skip if repository is archived
-    if (data.isArchived) return
-
-    if (data.owner.login === owner) {
-      /** @type Repository */
-      records.push({
-        owner: data.owner.login,
-        repo: data.name
-      })
-    }
-  })
-
-  if (pageInfo.hasNextPage) {
-    await getRepositories(octokit, owner, type, pageInfo.endCursor, records)
-  }
-
-  return records
-}
-
-/**
  * @typedef {object} Action
  *
- * @property {string} action
- * @property {string} [owner]
- * @property {string} [repo]
- * @property {string} [workflow]
+ * @property {string}   owner
+ * @property {string}   repo
+ * @property {string}   workflow
+ * @property {string[]} [permissions]
+ * @property {string[]} [uses]
  *
  * @readonly
  */
+
+const WORKFLOWS_QUERY = `query($owner: String!, $cursor: String = null) {
+  repositoryOwner(login: $owner) {
+    repositories(
+      first: 100
+      after: $cursor
+      affiliations: OWNER
+      orderBy: {
+        field: NAME
+        direction: ASC
+      }
+    ) {
+      nodes {
+        owner { login }
+        name
+        isArchived
+        isFork
+        object(expression: "HEAD:.github/workflows") {
+          ... on Tree {
+            entries {
+              path
+              name
+              object {
+                ... on Blob {
+                  text
+                  abbreviatedOid
+                  byteSize
+                  isBinary
+                  isTruncated
+                }
+              }
+              extension
+              type
+            }
+          }
+        }
+      }
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+    }
+  }
+}`
+
+const REPO_QUERY = `query ($owner: String!, $name: String!) {
+  repository(owner: $owner, name: $name) {
+    owner {
+      login
+    }
+    name
+    isArchived
+    isFork
+    object(expression: "HEAD:.github/workflows") {
+      ... on Tree {
+        entries {
+          path
+          name
+          object {
+            ... on Blob {
+              text
+              abbreviatedOid
+              byteSize
+              isBinary
+              isTruncated
+            }
+          }
+          extension
+          type
+        }
+      }
+    }
+  }
+}`
 
 /**
  * @async
@@ -196,43 +156,68 @@ const getRepositories = async (octokit, owner, type = 'organization', cursor = n
  *
  * @param {import('@octokit/core').Octokit} octokit
  * @param {object}                          options
- * @param {string}                          options.owner
- * @param {string}                          options.repo
+ * @param {string}                          [options.owner=null]
+ * @param {string}                          [options.repo=null]
  * @param {boolean}                         [options.getPermissions=false]
  * @param {boolean}                         [options.getUses=false]
  * @param {boolean}                         [options.isExcluded=false]
+ * @param {string}                          [cursor=null]
+ * @param {Action[]}                        [records=[]]
  *
- * @returns {Action[]}
+ * @returns {[]object}
  */
-const findActions = async (octokit, {owner, repo, getPermissions = false, getUses = false, isExcluded = false}) => {
-  /** @type Action[] */
-  const actions = []
-
+const findActions = async (
+  octokit,
+  {owner = null, repo = null, getPermissions = false, getUses = false, isExcluded = false},
+  cursor = null,
+  records = []
+) => {
   try {
-    // https://docs.github.com/en/rest/reference/actions#list-repository-workflows
-    const {
-      data: {workflows}
-    } = await octokit.request('GET /repos/{owner}/{repo}/actions/workflows', {
-      owner,
-      repo
-    })
+    let repos = []
+    let pi = {}
 
-    for await (const wf of workflows) {
-      const info = {owner, repo, workflow: wf.path}
+    if (owner !== null && repo === null) {
+      const {
+        repositoryOwner: {
+          repositories: {nodes, pageInfo}
+        }
+      } = await octokit.graphql(WORKFLOWS_QUERY, {owner, cursor})
 
-      if (getPermissions || getUses) {
-        const {
-          data: {content}
-        } = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
-          owner,
-          repo,
-          path: wf.path
-        })
+      repos = nodes
+      pi = pageInfo
+    }
+
+    if (owner !== null && repo !== null) {
+      const {repository} = await octokit.graphql(REPO_QUERY, {owner, name: repo})
+
+      repos = [repository]
+    }
+
+    for (const r of repos) {
+      const {
+        owner: {login},
+        name,
+        isArchived: archived,
+        isFork: fork,
+        object: workflows
+      } = r
+
+      // skip archived or forked repositories
+      if (archived || fork) continue
+
+      // skip if we don't have content
+      if (!workflows || workflows?.entries.length < 1) continue
+
+      for (const wf of workflows.entries) {
+        const info = {owner: login, repo: name, workflow: wf.path}
+
+        // skip if not .yml or .yaml
+        if (!['.yml', '.yaml'].includes(wf.extension)) continue
+
+        const content = wf.object?.text
 
         if (content) {
-          const _buff = Buffer.from(content, 'base64')
-          const _content = _buff.toString('utf-8')
-          const yaml = load(_content, 'utf8')
+          const yaml = load(content, 'utf8')
 
           if (getPermissions) {
             info.permissions = recursiveSearch(yaml, 'permissions')
@@ -240,52 +225,29 @@ const findActions = async (octokit, {owner, repo, getPermissions = false, getUse
 
           if (getUses) {
             let uses = recursiveSearch(yaml, 'uses')
-
             // exclude actions created by GitHub (owner: actions||github)
             if (isExcluded) {
               uses = uses.filter(use => !(use.includes('actions/') || use.includes('github/')))
             }
-
             info.uses = uses
           }
         }
+
+        records.push(info)
       }
+    }
 
-      actions.push(info)
+    if (pi.hasNextPage) {
+      // wait 1s between requests
+      wait(1000)
 
-      // wait 2.5s between calls
-      await wait(2500)
+      await findActions(octokit, {owner, repo, getPermissions, getUses, isExcluded}, pi.endCursor, records)
     }
   } catch (error) {
     // do nothing
   }
 
-  return actions.sort(sortActions)
-}
-
-/**
- * @private
- * @function sortActions
- *
- * @param {Action} a
- * @param {Action} b
- *
- * @returns {number}
- */
-const sortActions = (a, b) => {
-  // Use toUpperCase() to ignore character casing
-  const A = a.workflow.toUpperCase()
-  const B = b.workflow.toUpperCase()
-
-  let comparison = 0
-
-  if (A > B) {
-    comparison = 1
-  } else if (A < B) {
-    comparison = -1
-  }
-
-  return comparison
+  return records
 }
 
 /**
@@ -304,9 +266,19 @@ const recursiveSearch = (search, key, results = []) => {
   for (const k in search) {
     const value = search[k]
 
-    if (typeof value === 'object' && k !== key) {
+    if (k !== key && typeof value === 'object') {
       recursiveSearch(value, key, res)
-    } else if (typeof value === 'string' && k === key) {
+    }
+
+    if (k === key && typeof value === 'object' && key !== 'uses') {
+      for (const i in value) {
+        const str = `${i}: ${value[i]}`
+
+        if (!res.includes(str)) res.push(str)
+      }
+    }
+
+    if (k === key && typeof value === 'string') {
       res.push(value)
     }
   }
@@ -425,56 +397,63 @@ Gathering GitHub Actions for ${blue(enterprise || owner || repository)} ${
 ${dim('(this could take a while...)')}
 `)
 
-    let repos = []
+    const actions = []
 
     if (enterprise) {
       const orgs = await getOrganizations(octokit, enterprise)
       console.log(`${dim(`searching in %s enterprise organizations\n[%s]`)}`, orgs.length, orgs.join(', '))
 
       for await (const org of orgs) {
-        const res = await getRepositories(octokit, org)
-        repos.push(...res)
+        await findActions(
+          octokit,
+          {
+            owner: org,
+            repo: null,
+            getPermissions,
+            getUses,
+            isExcluded
+          },
+          null,
+          actions
+        )
+
+        // wait 1s between orgs
+        wait(1000)
       }
     }
 
     if (owner) {
-      const {
-        data: {type}
-      } = await octokit.request('GET /users/{owner}', {
-        owner
-      })
-
-      console.log(`${dim(`searching %s %s`)}`, type.toLowerCase(), owner)
-      repos = await getRepositories(octokit, owner, type.toLowerCase())
+      await findActions(
+        octokit,
+        {
+          owner,
+          repo: null,
+          getPermissions,
+          getUses,
+          isExcluded
+        },
+        null,
+        actions
+      )
     }
 
     if (repository) {
       const [_o, _r] = repository.split('/')
 
       console.log(`${dim(`searching %s/%s`)}`, _o, _r)
-      repos.push({owner: _o, repo: _r})
-    }
 
-    const actions = []
-    let i = 0
-    for await (const {owner: org, repo} of repos) {
-      const ul = i === repos.length - 1 ? '└─' : '├─'
-
-      console.log(`  ${ul} ${org}/${repo}`)
-      const res = await findActions(octokit, {
-        owner: org,
-        repo,
-        getPermissions,
-        getUses,
-        isExcluded
-      })
-
-      actions.push(...res)
-
-      // wait 2.5s between repositories to help spread out the requests
-      wait(2500)
-
-      i++
+      await findActions(
+        octokit,
+        {
+          owner: _o,
+          repo: _r,
+          getPermissions,
+          getUses,
+          isExcluded
+        },
+        null,
+        actions
+      )
     }
 
     this.actions = actions
@@ -584,7 +563,7 @@ ${dim('(this could take a while...)')}
       })
 
       console.log(`saving report JSON in ${blue(`${jsonPath}`)}`)
-      await writeFileSync(jsonPath, JSON.stringify(json, null, 2))
+      await writeFileSync(jsonPath, JSON.stringify(json, null, 0))
     } catch (error) {
       throw error
     }
@@ -606,7 +585,7 @@ ${dim('(this could take a while...)')}
 
     try {
       console.log(`saving unique report JSON in ${blue(`${pathUnique}`)}`)
-      await writeFileSync(pathUnique, JSON.stringify(unique, null, 2))
+      await writeFileSync(pathUnique, JSON.stringify(unique, null, 0))
     } catch (error) {
       throw error
     }
@@ -644,9 +623,14 @@ ${dim('(this could take a while...)')}
           mdStr += ` | ${permissions && permissions.length > 0 ? `\`${JSON.stringify(permissions, null, 0)}\`` : 'n/a'}`
         }
 
-        if (getUses) {
-          const usesLinks = []
+        if (getUses && uses) {
+          // skip if not iterable
+          if (uses === null || uses === undefined || typeof uses[Symbol.iterator] !== 'function') {
+            mdStr += ' | n/a'
+            continue
+          }
 
+          const usesLinks = []
           for (const action of uses) {
             if (action.indexOf('./') === -1) {
               const [a, v] = action.split('@')
