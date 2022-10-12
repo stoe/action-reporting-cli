@@ -78,7 +78,7 @@ const getOrganizations = async (octokit, enterprise, cursor = null, records = []
 const WORKFLOWS_QUERY = `query($owner: String!, $cursor: String = null) {
   repositoryOwner(login: $owner) {
     repositories(
-      first: 100
+      first: 50
       after: $cursor
       affiliations: OWNER
       orderBy: {
@@ -174,7 +174,7 @@ const findActions = async (
 ) => {
   try {
     let repos = []
-    let pi = {}
+    let pi = null
 
     if (owner !== null && repo === null) {
       const {
@@ -237,7 +237,7 @@ const findActions = async (
       }
     }
 
-    if (pi.hasNextPage) {
+    if (pi && pi.hasNextPage) {
       // wait 1s between requests
       wait(1000)
 
