@@ -195,7 +195,6 @@ const findActions = async (
 
     for (const r of repos) {
       const {
-        owner: {login},
         name,
         // isArchived: archived,
         // isFork: fork,
@@ -212,24 +211,28 @@ const findActions = async (
         // skip if not .yml or .yaml
         if (!['.yml', '.yaml'].includes(wf.extension)) continue
 
-        const info = {owner: login, repo: name, workflow: wf.path}
+        const info = {owner, repo: name, workflow: wf.path}
 
         const content = wf.object?.text
 
         if (content) {
-          const yaml = load(content, 'utf8')
+          try {
+            const yaml = load(content, 'utf8')
 
-          if (getPermissions) {
-            info.permissions = recursiveSearch(yaml, 'permissions')
-          }
-
-          if (getUses) {
-            let uses = recursiveSearch(yaml, 'uses')
-            // exclude actions created by GitHub (owner: actions||github)
-            if (isExcluded) {
-              uses = uses.filter(use => !(use.includes('actions/') || use.includes('github/')))
+            if (getPermissions) {
+              info.permissions = recursiveSearch(yaml, 'permissions')
             }
-            info.uses = uses
+
+            if (getUses) {
+              let uses = recursiveSearch(yaml, 'uses')
+              // exclude actions created by GitHub (owner: actions||github)
+              if (isExcluded) {
+                uses = uses.filter(use => !(use.includes('actions/') || use.includes('github/')))
+              }
+              info.uses = uses
+            }
+          } catch (err) {
+            console.warn(red(`malformed yml: ${owner}/${name} ${wf.path}`))
           }
         }
 
@@ -243,11 +246,9 @@ const findActions = async (
 
       await findActions(octokit, {owner, repo, getPermissions, getUses, isExcluded}, pi.endCursor, records)
     }
-  } catch (error) {
+  } catch (err) {
     // do nothing
   }
-
-  return records
 }
 
 /**
