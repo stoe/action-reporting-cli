@@ -227,7 +227,7 @@ const findActions = async (
               info.uses = findUses(content, isExcluded)
             }
           } catch (err) {
-            console.warn(red(`malformed yml: ${owner}/${name} ${wf.path}`))
+            console.warn(red(`malformed yml: https://github.com/${owner}/${name}/blob/HEAD/${wf.path}`))
           }
         }
 
