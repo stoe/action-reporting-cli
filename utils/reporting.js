@@ -220,7 +220,7 @@ const findActions = async (
             const yaml = load(content, 'utf8')
 
             if (getPermissions) {
-              info.permissions = recursiveSearch(yaml, 'permissions')
+              info.permissions = findPermissions(yaml)
             }
 
             if (getUses) {
@@ -266,22 +266,22 @@ const findUses = (text, isExcluded) => {
 
 /**
  * @private
- * @function recursiveSearch
+ * @function findPermissions
  *
  * @param {object}  search
- * @param {string}  key
  * @param {any[]}   [results=[]]
  *
  * @returns {any[]}
  */
-const recursiveSearch = (search, key, results = []) => {
+const findPermissions = (search, results = []) => {
+  const key = 'permissions'
   const res = results
 
   for (const k in search) {
     const value = search[k]
 
     if (k !== key && typeof value === 'object') {
-      recursiveSearch(value, key, res)
+      findPermissions(value, res)
     }
 
     if (k === key && typeof value === 'object') {
@@ -293,7 +293,7 @@ const recursiveSearch = (search, key, results = []) => {
     }
 
     if (k === key && typeof value === 'string') {
-      res.push(value)
+      if (!res.includes(value)) res.push(value)
     }
   }
 
