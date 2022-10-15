@@ -251,8 +251,6 @@ const findUses = (text, isExcluded) => {
   const uses = []
   const match = [...text.matchAll(usesRegex)]
 
-  console.debug(match)
-
   match.map(m => {
     const u = m[2].trim()
     if (u.indexOf('/') < 0 && u.indexOf('.') < 0) return
