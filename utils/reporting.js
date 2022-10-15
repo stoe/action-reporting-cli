@@ -220,19 +220,14 @@ const findActions = async (
             const yaml = load(content, 'utf8')
 
             if (getPermissions) {
-              info.permissions = recursiveSearch(yaml, 'permissions')
+              info.permissions = findPermissions(yaml)
             }
 
             if (getUses) {
-              let uses = recursiveSearch(yaml, 'uses')
-              // exclude actions created by GitHub (owner: actions||github)
-              if (isExcluded) {
-                uses = uses.filter(use => !(use.includes('actions/') || use.includes('github/')))
-              }
-              info.uses = uses
+              info.uses = findUses(content, isExcluded)
             }
           } catch (err) {
-            console.warn(red(`malformed yml: ${owner}/${name} ${wf.path}`))
+            console.warn(red(`malformed yml: https://github.com/${owner}/${name}/blob/HEAD/${wf.path}`))
           }
         }
 
@@ -251,27 +246,47 @@ const findActions = async (
   }
 }
 
+const usesRegex = /([^\s+]|[^\t+])uses: (.*)/g
+const findUses = (text, isExcluded) => {
+  const uses = []
+  const match = [...text.matchAll(usesRegex)]
+
+  console.debug(match)
+
+  match.map(m => {
+    const u = m[2].trim()
+    if (u.indexOf('/') < 0 && u.indexOf('.') < 0) return
+
+    // exclude actions created by GitHub (owner: actions||github)
+    if ((isExcluded && u.startsWith('actions/')) || u.startsWith('github/')) return
+
+    if (!uses.includes(u)) uses.push(u)
+  })
+
+  return uses
+}
+
 /**
  * @private
- * @function recursiveSearch
+ * @function findPermissions
  *
  * @param {object}  search
- * @param {string}  key
  * @param {any[]}   [results=[]]
  *
  * @returns {any[]}
  */
-const recursiveSearch = (search, key, results = []) => {
+const findPermissions = (search, results = []) => {
+  const key = 'permissions'
   const res = results
 
   for (const k in search) {
     const value = search[k]
 
     if (k !== key && typeof value === 'object') {
-      recursiveSearch(value, key, res)
+      findPermissions(value, res)
     }
 
-    if (k === key && typeof value === 'object' && key !== 'uses') {
+    if (k === key && typeof value === 'object') {
       for (const i in value) {
         const str = `${i}: ${value[i]}`
 
@@ -280,7 +295,7 @@ const recursiveSearch = (search, key, results = []) => {
     }
 
     if (k === key && typeof value === 'string') {
-      res.push(value)
+      if (!res.includes(value)) res.push(value)
     }
   }
 
