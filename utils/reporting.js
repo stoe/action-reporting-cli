@@ -246,10 +246,12 @@ const findActions = async (
   }
 }
 
-const usesRegex = /(\s|\t)+uses: (.*)/g
+const usesRegex = /([^\s+]|[^\t+])uses: (.*)/g
 const findUses = (text, isExcluded) => {
   const uses = []
   const match = [...text.matchAll(usesRegex)]
+
+  console.debug(match)
 
   match.map(m => {
     const u = m[2].trim()
