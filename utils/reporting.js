@@ -224,12 +224,7 @@ const findActions = async (
             }
 
             if (getUses) {
-              let uses = recursiveSearch(yaml, 'uses')
-              // exclude actions created by GitHub (owner: actions||github)
-              if (isExcluded) {
-                uses = uses.filter(use => !(use.includes('actions/') || use.includes('github/')))
-              }
-              info.uses = uses
+              info.uses = findUses(content, isExcluded)
             }
           } catch (err) {
             console.warn(red(`malformed yml: ${owner}/${name} ${wf.path}`))
@@ -249,6 +244,24 @@ const findActions = async (
   } catch (err) {
     // do nothing
   }
+}
+
+const usesRegex = /(\s|\t)+uses: (.*)/g
+const findUses = (text, isExcluded) => {
+  const uses = []
+  const match = [...text.matchAll(usesRegex)]
+
+  match.map(m => {
+    const u = m[2].trim()
+    if (u.indexOf('/') < 0 && u.indexOf('.') < 0) return
+
+    // exclude actions created by GitHub (owner: actions||github)
+    if ((isExcluded && u.startsWith('actions/')) || u.startsWith('github/')) return
+
+    if (!uses.includes(u)) uses.push(u)
+  })
+
+  return uses
 }
 
 /**
@@ -271,7 +284,7 @@ const recursiveSearch = (search, key, results = []) => {
       recursiveSearch(value, key, res)
     }
 
-    if (k === key && typeof value === 'object' && key !== 'uses') {
+    if (k === key && typeof value === 'object') {
       for (const i in value) {
         const str = `${i}: ${value[i]}`
 
