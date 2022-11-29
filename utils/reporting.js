@@ -226,6 +226,8 @@ const findActions = async (
             if (getUses) {
               info.uses = findUses(content, isExcluded)
             }
+
+            info.runsOn = findRunsOn(content)
           } catch (err) {
             console.warn(red(`malformed yml: https://github.com/${owner}/${name}/blob/HEAD/${wf.path}`))
           }
@@ -249,9 +251,9 @@ const findActions = async (
 const usesRegex = /([^\s+]|[^\t+])uses: (.*)/g
 const findUses = (text, isExcluded) => {
   const uses = []
-  const match = [...text.matchAll(usesRegex)]
+  const matchUses = [...text.matchAll(usesRegex)]
 
-  match.map(m => {
+  matchUses.map(m => {
     const u = m[2].trim()
     if (u.indexOf('/') < 0 && u.indexOf('.') < 0) return
 
@@ -262,6 +264,20 @@ const findUses = (text, isExcluded) => {
   })
 
   return uses
+}
+
+const runsOnRegex = /([^\s+]|[^\t+])runs-on: (.*)/g
+const findRunsOn = text => {
+  const runsOn = []
+  const matchRunsOn = [...text.matchAll(runsOnRegex)]
+
+  matchRunsOn.map(m => {
+    const r = m[2].trim()
+
+    if (!runsOn.includes(r)) runsOn.push(r)
+  })
+
+  return runsOn
 }
 
 /**
@@ -572,6 +588,7 @@ ${dim('(this could take a while...)')}
 
         if (getPermissions) jsonData.permissions = i.permissions
         if (getUses) jsonData.uses = i.uses
+        jsonData.runsOn = i.runsOn
 
         return jsonData
       })
