@@ -43,19 +43,19 @@
   "dependencies": {
     "@octokit/core": "^4.1.0",
     "@octokit/plugin-paginate-rest": "^5.0.1",
-    "@octokit/plugin-throttling": "^4.3.1",
+    "@octokit/plugin-throttling": "^4.3.2",
     "chalk": "^4.1.2, <5",
-    "csv": "^6.2.1",
+    "csv": "^6.2.5",
     "js-yaml": "^4.1.0",
     "meow": "^11.0.0"
   },
   "devDependencies": {
-    "@github/prettier-config": "^0.0.4",
+    "@github/prettier-config": "^0.0.6",
     "@octokit/openapi-types": "^14.0.0",
-    "eslint": "^8.25.0",
-    "eslint-config-prettier": "^8.5.0",
-    "eslint-plugin-github": "^4.4.0",
-    "husky": "^8.0.1"
+    "eslint": "^8.31.0",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-github": "^4.6.0",
+    "husky": "^8.0.3"
   },
   "husky": {
     "hooks": {

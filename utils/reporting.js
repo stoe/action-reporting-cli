@@ -47,8 +47,8 @@ const getOrganizations = async (octokit, enterprise, cursor = null, records = []
 
   const {
     enterprise: {
-      organizations: {nodes, pageInfo}
-    }
+      organizations: {nodes, pageInfo},
+    },
   } = await octokit.graphql(ORG_QUERY, {enterprise, cursor})
 
   nodes.map(data => {
@@ -170,7 +170,7 @@ const findActions = async (
   octokit,
   {owner = null, repo = null, getPermissions = false, getUses = false, isExcluded = false},
   cursor = null,
-  records = []
+  records = [],
 ) => {
   try {
     let repos = []
@@ -179,8 +179,8 @@ const findActions = async (
     if (owner !== null && repo === null) {
       const {
         repositoryOwner: {
-          repositories: {nodes, pageInfo}
-        }
+          repositories: {nodes, pageInfo},
+        },
       } = await octokit.graphql(WORKFLOWS_QUERY, {owner, cursor})
 
       repos = nodes
@@ -198,7 +198,7 @@ const findActions = async (
         name,
         // isArchived: archived,
         // isFork: fork,
-        object: workflows
+        object: workflows,
       } = r
 
       // // skip archived or forked repositories
@@ -361,7 +361,7 @@ class Reporting {
     getPermissions = false,
     getUses = false,
     isUnique = false,
-    isExcluded = false
+    isExcluded = false,
   }) {
     this.token = token
     this.enterprise = enterprise
@@ -387,8 +387,8 @@ class Reporting {
           console.warn(red(`Secondary rate limit hit detected for request ${options.method} ${options.url}`))
           console.warn(yellow(`Retrying after ${retryAfter} seconds!`))
           return true
-        }
-      }
+        },
+      },
     })
 
     this.actions = []
@@ -425,10 +425,10 @@ ${dim('(this could take a while...)')}
             repo: null,
             getPermissions,
             getUses,
-            isExcluded
+            isExcluded,
           },
           null,
-          actions
+          actions,
         )
 
         // wait 1s between orgs
@@ -444,10 +444,10 @@ ${dim('(this could take a while...)')}
           repo: null,
           getPermissions,
           getUses,
-          isExcluded
+          isExcluded,
         },
         null,
-        actions
+        actions,
       )
     }
 
@@ -463,10 +463,10 @@ ${dim('(this could take a while...)')}
           repo: _r,
           getPermissions,
           getUses,
-          isExcluded
+          isExcluded,
         },
         null,
-        actions
+        actions,
       )
     }
 
@@ -515,8 +515,8 @@ ${dim('(this could take a while...)')}
         }),
         {
           header: true,
-          columns: header
-        }
+          columns: header,
+        },
       )
 
       console.log(`saving report CSV in ${blue(`${csvPath}`)}`)
@@ -546,8 +546,8 @@ ${dim('(this could take a while...)')}
         unique.map(i => [i]),
         {
           header: true,
-          columns: ['uses']
-        }
+          columns: ['uses'],
+        },
       )
 
       console.log(`saving unique report CSV in ${blue(`${pathUnique}`)}`)
