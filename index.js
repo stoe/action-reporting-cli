@@ -15,8 +15,8 @@ const cli = meow(
     ${yellow(`--owner`)}, ${yellow(`-o`)}       GitHub organization/user login ${dim('(e.g. owner)')}.
                       ${dim(
                         `If ${yellow(`--owner`)} is a user, results for the authenticated user (${yellow(
-                          `--token`
-                        )}) will be returned.`
+                          `--token`,
+                        )}) will be returned.`,
                       )}
     ${yellow(`--repository`)}, ${yellow(`-r`)}  GitHub repository name with owner ${dim('(e.g. owner/repo)')}.
 
@@ -27,12 +27,12 @@ const cli = meow(
     ${yellow(`--exclude`)}         Exclude GitHub Actions created by GitHub.
                       ${dim(
                         `From https://github.com/actions and https://github.com/github organizations.
-                      Only applies to ${yellow(`--uses`)}.`
+                      Only applies to ${yellow(`--uses`)}.`,
                       )}
     ${yellow(`--unique`)}          List unique GitHub Actions.
                       ${dim(
                         `Possible values are ${yellow('true')}, ${yellow('false')} and ${yellow('both')}.
-                      Only applies to ${yellow(`--uses`)}.`
+                      Only applies to ${yellow(`--uses`)}.`,
                       )}
                       ${dim(`Will create an additional ${bold('*-unique.{csv,json,md}')} report file.`)}
 
@@ -55,57 +55,57 @@ const cli = meow(
     flags: {
       help: {
         type: 'boolean',
-        alias: 'h'
+        alias: 'h',
       },
       version: {
         type: 'boolean',
-        alias: 'v'
+        alias: 'v',
       },
       enterprise: {
         type: 'string',
-        alias: 'e'
+        alias: 'e',
       },
       owner: {
         type: 'string',
         alias: 'o',
-        isMultiple: false
+        isMultiple: false,
       },
       repository: {
         type: 'string',
         alias: 'r',
-        isMultiple: false
+        isMultiple: false,
       },
       permissions: {
         type: 'boolean',
-        default: false
+        default: false,
       },
       uses: {
         type: 'boolean',
-        default: false
+        default: false,
       },
       exclude: {
         type: 'boolean',
-        default: false
+        default: false,
       },
       unique: {
-        default: false
+        default: false,
       },
       csv: {
-        type: 'string'
+        type: 'string',
       },
       md: {
-        type: 'string'
+        type: 'string',
       },
       json: {
-        type: 'string'
+        type: 'string',
       },
       token: {
         type: 'string',
         alias: 't',
-        default: process.env.GITHUB_TOKEN || ''
-      }
-    }
-  }
+        default: process.env.GITHUB_TOKEN || '',
+      },
+    },
+  },
 )
 
 // action
@@ -125,7 +125,7 @@ const cli = meow(
       permissions,
       uses,
       unique: _unique,
-      exclude
+      exclude,
     } = cli.flags
 
     help && cli.showHelp(0)
@@ -171,7 +171,7 @@ const cli = meow(
       getPermissions: permissions,
       getUses: uses,
       isUnique: uniqueFlag,
-      isExcluded: exclude
+      isExcluded: exclude,
     })
 
     // get report
