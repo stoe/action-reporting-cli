@@ -5,6 +5,7 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'saturday'
+      timezone: 'Europe/Berlin'
     commit-message:
       prefix: '🆙 action'
     labels:
@@ -15,6 +16,7 @@ updates:
     schedule:
       interval: 'weekly'
       day: 'saturday'
+      timezone: 'Europe/Berlin'
     commit-message:
       prefix: '🆙 npm'
       include: 'scope'
