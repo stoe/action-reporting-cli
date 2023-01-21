@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@octokit/core": "^4.1.0",
-    "@octokit/plugin-paginate-rest": "^5.0.1",
+    "@octokit/plugin-paginate-rest": "^6.0.0",
     "@octokit/plugin-throttling": "^5.0.1",
     "chalk": "^4.1.2, <6",
     "csv": "^6.2.5",
