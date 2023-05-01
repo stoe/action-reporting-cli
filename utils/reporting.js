@@ -641,7 +641,7 @@ ${dim('(this could take a while...)')}
    * @throws {Error}
    */
   async saveMarkdown() {
-    const {actions, mdPath, getPermissions, getUses} = this
+    const {actions, mdPath, getPermissions, getRunsOn, getUses} = this
 
     try {
       let header = 'owner | repo | workflow'
@@ -652,18 +652,27 @@ ${dim('(this could take a while...)')}
         headerBreak += ' | ---'
       }
 
+      if (getRunsOn) {
+        header += ' | runs-on'
+        headerBreak += ' | ---'
+      }
+
       if (getUses) {
         header += ' | uses'
         headerBreak += ' | ---'
       }
 
       const mdData = []
-      for (const {owner, repo, workflow, permissions, uses} of actions) {
+      for (const {owner, repo, workflow, permissions, runsOn, uses} of actions) {
         const workflowLink = `https://github.com/${owner}/${repo}/blob/HEAD/${workflow}`
         let mdStr = `${owner} | ${repo} | [${workflow}](${workflowLink})`
 
         if (getPermissions) {
           mdStr += ` | ${permissions && permissions.length > 0 ? `\`${JSON.stringify(permissions, null, 0)}\`` : 'n/a'}`
+        }
+
+        if (getRunsOn) {
+          mdStr += ` | ${runsOn && runsOn.length > 0 ? runsOn.join(', ') : 'n/a'}`
         }
 
         if (getUses && uses) {
