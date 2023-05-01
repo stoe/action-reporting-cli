@@ -1,0 +1,22 @@
+{
+  "name": "action-permissions-cli (node v16, npm v7)",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "args": {
+      "VARIANT": "16"
+    }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["dbaeumer.vscode-eslint", "editorconfig.editorconfig", "esbenp.prettier-vscode"]
+    }
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "configureZshAsDefaultShell": true
+    },
+    "ghcr.io/devcontainers/features/github-cli": {}
+  },
+  "remoteUser": "node",
+  "postCreateCommand": "npm install && npm run build --if-present"
+}
