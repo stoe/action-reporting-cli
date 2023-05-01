@@ -591,13 +591,14 @@ ${dim('(this could take a while...)')}
    * @throws {Error}
    */
   async saveJSON() {
-    const {actions, jsonPath, getPermissions, getUses} = this
+    const {actions, jsonPath, getPermissions, getRunsOn, getUses} = this
 
     try {
       const json = actions.map(i => {
         const jsonData = {owner: i.owner, repo: i.repo, workflow: i.workflow}
 
         if (getPermissions) jsonData.permissions = i.permissions
+        if (getRunsOn) jsonData.runsOn = i.runsOn
         if (getUses) jsonData.uses = i.uses
         jsonData.runsOn = i.runsOn
 
