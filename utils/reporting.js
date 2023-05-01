@@ -225,7 +225,7 @@ const findActions = async (
             }
 
             if (getRunsOn) {
-              info.runsOn = findRunsOn(content)
+              info.runsOn = findRunsOn(yaml)
             }
 
             if (getUses) {
@@ -269,18 +269,40 @@ const findUses = (text, isExcluded) => {
   return uses
 }
 
-const runsOnRegex = /([^\s+]|[^\t+])runs-on: (.*)/g
-const findRunsOn = text => {
-  const runsOn = []
-  const matchRunsOn = [...text.matchAll(runsOnRegex)]
+/**
+ * @private
+ * @function findRunsOn
+ *
+ * @param {object}  search
+ * @param {any[]}   [results=[]]
+ *
+ * @returns {any[]}
+ */
+const findRunsOn = (search, results = []) => {
+  const key = 'runs-on'
+  const res = results
 
-  matchRunsOn.map(m => {
-    const r = m[2].trim()
+  for (const k in search) {
+    const value = search[k]
 
-    if (!runsOn.includes(r)) runsOn.push(r)
-  })
+    if (k !== key && typeof value === 'object') {
+      findRunsOn(value, res)
+    }
 
-  return runsOn
+    if (k === key && typeof value === 'object') {
+      for (const i in value) {
+        const v = value[i]
+
+        if (!res.includes(v)) res.push(v)
+      }
+    }
+
+    if (k === key && typeof value === 'string') {
+      if (!res.includes(value)) res.push(value)
+    }
+  }
+
+  return res
 }
 
 /**
@@ -672,7 +694,14 @@ ${dim('(this could take a while...)')}
         }
 
         if (getRunsOn) {
-          mdStr += ` | ${runsOn && runsOn.length > 0 ? runsOn.join(', ') : 'n/a'}`
+          const v = runsOn.map(i => {
+            if (i.indexOf('matrix') > -1) {
+              i = `\`${i}\``
+            }
+            return i
+          })
+
+          mdStr += ` | ${v && v.length > 0 ? v.join(', ') : 'n/a'}`
         }
 
         if (getUses && uses) {
