@@ -23,6 +23,7 @@ const cli = meow(
   ${bold('Additional options')}
     ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
     ${yellow(`--permissions`)}     Report ${bold('permissions')} values for GITHUB_TOKEN.
+    ${yellow(`--runs-on`)}         Report ${bold('runs-on')} values.
     ${yellow(`--uses`)}            Report ${bold('uses')} values.
     ${yellow(`--exclude`)}         Exclude GitHub Actions created by GitHub.
                       ${dim(
@@ -79,6 +80,10 @@ const cli = meow(
         type: 'boolean',
         default: false,
       },
+      runsOn: {
+        type: 'boolean',
+        default: false,
+      },
       uses: {
         type: 'boolean',
         default: false,
@@ -123,6 +128,7 @@ const cli = meow(
       json,
       token,
       permissions,
+      runsOn,
       uses,
       unique: _unique,
       exclude,
@@ -169,6 +175,7 @@ const cli = meow(
       mdPath: md,
       jsonPath: json,
       getPermissions: permissions,
+      getRunsOn: runsOn,
       getUses: uses,
       isUnique: uniqueFlag,
       isExcluded: exclude,

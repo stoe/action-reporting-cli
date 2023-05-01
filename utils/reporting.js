@@ -159,6 +159,7 @@ const REPO_QUERY = `query ($owner: String!, $name: String!) {
  * @param {string}                          [options.owner=null]
  * @param {string}                          [options.repo=null]
  * @param {boolean}                         [options.getPermissions=false]
+ * @param {boolean}                         [options.getRunsOn=false]
  * @param {boolean}                         [options.getUses=false]
  * @param {boolean}                         [options.isExcluded=false]
  * @param {string}                          [cursor=null]
@@ -168,7 +169,7 @@ const REPO_QUERY = `query ($owner: String!, $name: String!) {
  */
 const findActions = async (
   octokit,
-  {owner = null, repo = null, getPermissions = false, getUses = false, isExcluded = false},
+  {owner = null, repo = null, getPermissions = false, getRunsOn = false, getUses = false, isExcluded = false},
   cursor = null,
   records = [],
 ) => {
@@ -223,11 +224,13 @@ const findActions = async (
               info.permissions = findPermissions(yaml)
             }
 
+            if (getRunsOn) {
+              info.runsOn = findRunsOn(content)
+            }
+
             if (getUses) {
               info.uses = findUses(content, isExcluded)
             }
-
-            info.runsOn = findRunsOn(content)
           } catch (err) {
             console.warn(red(`malformed yml: https://github.com/${owner}/${name}/blob/HEAD/${wf.path}`))
           }
@@ -241,7 +244,7 @@ const findActions = async (
       // wait 1s between requests
       wait(1000)
 
-      await findActions(octokit, {owner, repo, getPermissions, getUses, isExcluded}, pi.endCursor, records)
+      await findActions(octokit, {owner, repo, getPermissions, getRunsOn, getUses, isExcluded}, pi.endCursor, records)
     }
   } catch (err) {
     // do nothing
@@ -362,6 +365,7 @@ class Reporting {
    * @param {string}          [options.mdPath=undefined]
    * @param {string}          [options.jsonPath=undefined]
    * @param {boolean}         [options.getPermissions=false]
+   * @param {boolean}         [options.getRunsOn=false]
    * @param {boolean}         [options.getUses=false]
    * @param {boolean|'both'}  [options.isUnique=false]
    * @param {boolean}         [options.isExcluded=false]
@@ -375,6 +379,7 @@ class Reporting {
     mdPath = undefined,
     jsonPath = undefined,
     getPermissions = false,
+    getRunsOn = false,
     getUses = false,
     isUnique = false,
     isExcluded = false,
@@ -387,6 +392,7 @@ class Reporting {
     this.mdPath = mdPath
     this.jsonPath = jsonPath
     this.getPermissions = getPermissions
+    this.getRunsOn = getRunsOn
     this.getUses = getUses
     this.isUnique = isUnique
     this.isExcluded = isExcluded
@@ -418,7 +424,7 @@ class Reporting {
    * @returns Action[]
    */
   async get() {
-    const {octokit, enterprise, owner, repository, getPermissions, getUses, isUnique, isExcluded} = this
+    const {octokit, enterprise, owner, repository, getPermissions, getRunsOn, getUses, isUnique, isExcluded} = this
 
     console.log(`
 Gathering GitHub Actions for ${blue(enterprise || owner || repository)} ${
@@ -440,6 +446,7 @@ ${dim('(this could take a while...)')}
             owner: org,
             repo: null,
             getPermissions,
+            getRunsOn,
             getUses,
             isExcluded,
           },
@@ -459,6 +466,7 @@ ${dim('(this could take a while...)')}
           owner,
           repo: null,
           getPermissions,
+          getRunsOn,
           getUses,
           isExcluded,
         },
@@ -478,6 +486,7 @@ ${dim('(this could take a while...)')}
           owner: _o,
           repo: _r,
           getPermissions,
+          getRunsOn,
           getUses,
           isExcluded,
         },
