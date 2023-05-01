@@ -522,11 +522,12 @@ ${dim('(this could take a while...)')}
    * @throws {Error}
    */
   async saveCsv() {
-    const {actions, csvPath, getPermissions, getUses} = this
+    const {actions, csvPath, getPermissions, getRunsOn, getUses} = this
 
     try {
       const header = ['owner', 'repo', 'workflow']
       if (getPermissions) header.push('permissions')
+      if (getRunsOn) header.push('runs-on')
       if (getUses) header.push('uses')
 
       // actions report
@@ -534,6 +535,7 @@ ${dim('(this could take a while...)')}
         actions.map(i => {
           const csvData = [i.owner, i.repo, i.workflow]
           if (getPermissions) csvData.push(JSON.stringify(i.permissions, null, 0))
+          if (getRunsOn) csvData.push(i.runsOn.join(', '))
           if (getUses && i.uses) csvData.push(i.uses.join(', '))
 
           return csvData
