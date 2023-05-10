@@ -19,11 +19,12 @@ const cli = meow(
                         )}) will be returned.`,
                       )}
     ${yellow(`--repository`)}, ${yellow(`-r`)}  GitHub repository name with owner ${dim('(e.g. owner/repo)')}.
+    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
 
   ${bold('Additional options')}
-    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
     ${yellow(`--permissions`)}     Report ${bold('permissions')} values for GITHUB_TOKEN.
     ${yellow(`--runs-on`)}         Report ${bold('runs-on')} values.
+    ${yellow(`--secrets`)}         Report ${bold('secrets')} used.
     ${yellow(`--uses`)}            Report ${bold('uses')} values.
     ${yellow(`--exclude`)}         Exclude GitHub Actions created by GitHub.
                       ${dim(
@@ -84,6 +85,10 @@ const cli = meow(
         type: 'boolean',
         default: false,
       },
+      secrets: {
+        type: 'boolean',
+        default: false,
+      },
       uses: {
         type: 'boolean',
         default: false,
@@ -129,6 +134,7 @@ const cli = meow(
       token,
       permissions,
       runsOn,
+      secrets,
       uses,
       unique: _unique,
       exclude,
@@ -171,14 +177,19 @@ const cli = meow(
       enterprise,
       owner,
       repository,
-      csvPath: csv,
-      mdPath: md,
-      jsonPath: json,
-      getPermissions: permissions,
-      getRunsOn: runsOn,
-      getUses: uses,
-      isUnique: uniqueFlag,
-      isExcluded: exclude,
+      flags: {
+        getPermissions: permissions,
+        getRunsOn: runsOn,
+        getSecrets: secrets,
+        getUses: uses,
+        isUnique: uniqueFlag,
+        isExcluded: exclude,
+      },
+      outputs: {
+        csvPath: csv,
+        mdPath: md,
+        jsonPath: json,
+      },
     })
 
     // get report
