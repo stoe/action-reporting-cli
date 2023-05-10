@@ -19,9 +19,9 @@ const cli = meow(
                         )}) will be returned.`,
                       )}
     ${yellow(`--repository`)}, ${yellow(`-r`)}  GitHub repository name with owner ${dim('(e.g. owner/repo)')}.
+    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
 
   ${bold('Additional options')}
-    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
     ${yellow(`--permissions`)}     Report ${bold('permissions')} values for GITHUB_TOKEN.
     ${yellow(`--runs-on`)}         Report ${bold('runs-on')} values.
     ${yellow(`--uses`)}            Report ${bold('uses')} values.
