@@ -7,7 +7,7 @@ import {throttling} from '@octokit/plugin-throttling'
 import wait from './wait.js'
 import {writeFileSync} from 'fs'
 
-const {blue, dim, inverse, red, yellow} = chalk
+const {blue, dim, red, yellow} = chalk
 const MyOctokit = Octokit.plugin(throttling, paginateRest)
 
 const ORG_QUERY = `query ($enterprise: String!, $cursor: String = null) {
@@ -160,6 +160,7 @@ const REPO_QUERY = `query ($owner: String!, $name: String!) {
  * @param {string}                          [options.repo=null]
  * @param {boolean}                         [options.getPermissions=false]
  * @param {boolean}                         [options.getRunsOn=false]
+ * @param {boolean}                         [options.getSecrets=false]
  * @param {boolean}                         [options.getUses=false]
  * @param {boolean}                         [options.isExcluded=false]
  * @param {string}                          [cursor=null]
@@ -169,7 +170,15 @@ const REPO_QUERY = `query ($owner: String!, $name: String!) {
  */
 const findActions = async (
   octokit,
-  {owner = null, repo = null, getPermissions = false, getRunsOn = false, getUses = false, isExcluded = false},
+  {
+    owner = null,
+    repo = null,
+    getPermissions = false,
+    getRunsOn = false,
+    getSecrets = false,
+    getUses = false,
+    isExcluded = false,
+  },
   cursor = null,
   records = [],
 ) => {
@@ -228,6 +237,10 @@ const findActions = async (
               info.runsOn = findRunsOn(yaml)
             }
 
+            if (getSecrets) {
+              info.secrets = findSecrets(content)
+            }
+
             if (getUses) {
               info.uses = findUses(content, isExcluded)
             }
@@ -251,22 +264,40 @@ const findActions = async (
   }
 }
 
-const usesRegex = /([^\s+]|[^\t+])uses: (.*)/g
-const findUses = (text, isExcluded) => {
-  const uses = []
-  const matchUses = [...text.matchAll(usesRegex)]
+/**
+ * @private
+ * @function findPermissions
+ *
+ * @param {object}  search
+ * @param {any[]}   [results=[]]
+ *
+ * @returns {any[]}
+ */
+const findPermissions = (search, results = []) => {
+  const key = 'permissions'
+  const res = results
 
-  matchUses.map(m => {
-    const u = m[2].trim()
-    if (u.indexOf('/') < 0 && u.indexOf('.') < 0) return
+  for (const k in search) {
+    const value = search[k]
 
-    // exclude actions created by GitHub (owner: actions||github)
-    if ((isExcluded && u.startsWith('actions/')) || u.startsWith('github/')) return
+    if (k !== key && typeof value === 'object') {
+      findPermissions(value, res)
+    }
 
-    if (!uses.includes(u)) uses.push(u)
-  })
+    if (k === key && typeof value === 'object') {
+      for (const i in value) {
+        const v = `${i}: ${value[i]}`
 
-  return uses
+        if (!res.includes(v)) res.push(v)
+      }
+    }
+
+    if (k === key && typeof value === 'string') {
+      if (!res.includes(value)) res.push(value)
+    }
+  }
+
+  return res
 }
 
 /**
@@ -305,40 +336,53 @@ const findRunsOn = (search, results = []) => {
   return res
 }
 
+const secretsRegex = /\$\{\{\s?secrets\.(.*)\s?\}\}/g
 /**
  * @private
- * @function findPermissions
+ * @function findSecrets
  *
- * @param {object}  search
- * @param {any[]}   [results=[]]
+ * @param {string}  text
  *
- * @returns {any[]}
+ * @returns {string[]}
  */
-const findPermissions = (search, results = []) => {
-  const key = 'permissions'
-  const res = results
+const findSecrets = text => {
+  const secrets = []
+  const matchSecrets = [...text.matchAll(secretsRegex)]
 
-  for (const k in search) {
-    const value = search[k]
+  matchSecrets.map(m => {
+    const v = m[1].trim()
 
-    if (k !== key && typeof value === 'object') {
-      findPermissions(value, res)
-    }
+    if (!secrets.includes(v)) secrets.push(v)
+  })
 
-    if (k === key && typeof value === 'object') {
-      for (const i in value) {
-        const str = `${i}: ${value[i]}`
+  return secrets
+}
 
-        if (!res.includes(str)) res.push(str)
-      }
-    }
+const usesRegex = /([^\s+]|[^\t+])uses: (.*)/g
+/**
+ * @private
+ * @function findUses
+ *
+ * @param {string}  text
+ * @param {boolean} isExcluded
+ *
+ * @returns {string[]}
+ */
+const findUses = (text, isExcluded) => {
+  const uses = []
+  const matchUses = [...text.matchAll(usesRegex)]
 
-    if (k === key && typeof value === 'string') {
-      if (!res.includes(value)) res.push(value)
-    }
-  }
+  matchUses.map(m => {
+    const u = m[2].trim()
+    if (u.indexOf('/') < 0 && u.indexOf('.') < 0) return
 
-  return res
+    // exclude actions created by GitHub (owner: actions||github)
+    if ((isExcluded && u.startsWith('actions/')) || u.startsWith('github/')) return
+
+    if (!uses.includes(u)) uses.push(u)
+  })
+
+  return uses
 }
 
 /**
@@ -383,41 +427,48 @@ class Reporting {
    * @param {string}          options.enterprise
    * @param {string}          options.owner
    * @param {string}          options.repository
-   * @param {string}          [options.csvPath=undefined]
-   * @param {string}          [options.mdPath=undefined]
-   * @param {string}          [options.jsonPath=undefined]
-   * @param {boolean}         [options.getPermissions=false]
-   * @param {boolean}         [options.getRunsOn=false]
-   * @param {boolean}         [options.getUses=false]
-   * @param {boolean|'both'}  [options.isUnique=false]
-   * @param {boolean}         [options.isExcluded=false]
+   * @param {object}          options.flags
+   * @param {boolean}         [options.flags.getPermissions=false]
+   * @param {boolean}         [options.flags.getRunsOn=false]
+   * @param {boolean}         [options.flags.getSecrets=false]
+   * @param {boolean}         [options.flags.getUses=false]
+   * @param {boolean}         [options.flags.isUnique=false]
+   * @param {boolean}         [options.flags.isExcluded=false]
+   * @param {object}          options.outputs
+   * @param {string}          [options.outputs.csvPath=undefined]
+   * @param {string}          [options.outputs.mdPath=undefined]
+   * @param {string}          [options.outputs.jsonPath=undefined]
    */
   constructor({
     token,
     enterprise,
     owner,
     repository,
-    csvPath = undefined,
-    mdPath = undefined,
-    jsonPath = undefined,
-    getPermissions = false,
-    getRunsOn = false,
-    getUses = false,
-    isUnique = false,
-    isExcluded = false,
+    flags: {
+      getPermissions = false,
+      getRunsOn = false,
+      getSecrets = false,
+      getUses = false,
+      isUnique = false,
+      isExcluded = false,
+    },
+    outputs: {csvPath = undefined, mdPath = undefined, jsonPath = undefined},
   }) {
     this.token = token
     this.enterprise = enterprise
     this.owner = owner
     this.repository = repository
-    this.csvPath = csvPath
-    this.mdPath = mdPath
-    this.jsonPath = jsonPath
+
     this.getPermissions = getPermissions
     this.getRunsOn = getRunsOn
+    this.getSecrets = getSecrets
     this.getUses = getUses
     this.isUnique = isUnique
     this.isExcluded = isExcluded
+
+    this.csvPath = csvPath
+    this.mdPath = mdPath
+    this.jsonPath = jsonPath
 
     this.octokit = new MyOctokit({
       auth: token,
@@ -446,14 +497,27 @@ class Reporting {
    * @returns Action[]
    */
   async get() {
-    const {octokit, enterprise, owner, repository, getPermissions, getRunsOn, getUses, isUnique, isExcluded} = this
+    const {
+      octokit,
+      enterprise,
+      owner,
+      repository,
+      getPermissions,
+      getRunsOn,
+      getSecrets,
+      getUses,
+      isUnique,
+      isExcluded,
+    } = this
 
-    console.log(`
-Gathering GitHub Actions for ${blue(enterprise || owner || repository)} ${
-      getPermissions ? inverse('permissions') : ''
-    } ${getUses ? inverse('uses') : ''}
-${dim('(this could take a while...)')}
-`)
+    const f = []
+    if (getPermissions) f.push('permissions')
+    if (getRunsOn) f.push('runs-on')
+    if (getSecrets) f.push('secrets')
+    if (getUses) f.push('uses')
+
+    console.log(`Gathering GitHub Actions ${yellow(`${f.join(', ')}`)} for ${blue(enterprise || owner || repository)}
+${dim('(this could take a while...)')}`)
 
     const actions = []
 
@@ -469,6 +533,7 @@ ${dim('(this could take a while...)')}
             repo: null,
             getPermissions,
             getRunsOn,
+            getSecrets,
             getUses,
             isExcluded,
           },
@@ -489,6 +554,7 @@ ${dim('(this could take a while...)')}
           repo: null,
           getPermissions,
           getRunsOn,
+          getSecrets,
           getUses,
           isExcluded,
         },
@@ -509,6 +575,7 @@ ${dim('(this could take a while...)')}
           repo: _r,
           getPermissions,
           getRunsOn,
+          getSecrets,
           getUses,
           isExcluded,
         },
@@ -613,7 +680,7 @@ ${dim('(this could take a while...)')}
    * @throws {Error}
    */
   async saveJSON() {
-    const {actions, jsonPath, getPermissions, getRunsOn, getUses} = this
+    const {actions, jsonPath, getPermissions, getRunsOn, getSecrets, getUses} = this
 
     try {
       const json = actions.map(i => {
@@ -621,6 +688,7 @@ ${dim('(this could take a while...)')}
 
         if (getPermissions) jsonData.permissions = i.permissions
         if (getRunsOn) jsonData.runsOn = i.runsOn
+        if (getSecrets) jsonData.secrets = i.secrets
         if (getUses) jsonData.uses = i.uses
         jsonData.runsOn = i.runsOn
 
