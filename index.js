@@ -58,24 +58,24 @@ const cli = meow(
     flags: {
       help: {
         type: 'boolean',
-        alias: 'h',
+        shortFlag: 'h',
       },
       version: {
         type: 'boolean',
-        alias: 'v',
+        shortFlag: 'v',
       },
       enterprise: {
         type: 'string',
-        alias: 'e',
+        shortFlag: 'e',
       },
       owner: {
         type: 'string',
-        alias: 'o',
+        shortFlag: 'o',
         isMultiple: false,
       },
       repository: {
         type: 'string',
-        alias: 'r',
+        shortFlag: 'r',
         isMultiple: false,
       },
       permissions: {
@@ -116,7 +116,7 @@ const cli = meow(
       },
       token: {
         type: 'string',
-        alias: 't',
+        shortFlag: 't',
         default: process.env.GITHUB_TOKEN || '',
       },
     },
