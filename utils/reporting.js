@@ -647,12 +647,13 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveCsv() {
-    const {actions, csvPath, getPermissions, getRunsOn, getUses, getVars} = this
+    const {actions, csvPath, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
 
     try {
       const header = ['owner', 'repo', 'workflow']
       if (getPermissions) header.push('permissions')
       if (getRunsOn) header.push('runs-on')
+      if (getSecrets) header.push('secrets')
       if (getUses) header.push('uses')
       if (getVars) header.push('vars')
 
@@ -660,10 +661,11 @@ ${dim('(this could take a while...)')}`)
       const csv = stringify(
         actions.map(i => {
           const csvData = [i.owner, i.repo, i.workflow]
-          if (getPermissions) csvData.push(JSON.stringify(i.permissions, null, 0))
+          if (getPermissions) csvData.push(i.permissions.join(', '))
           if (getRunsOn) csvData.push(i.runsOn.join(', '))
+          if (getSecrets) csvData.push(i.secrets.join(', '))
           if (getUses && i.uses) csvData.push(i.uses.join(', '))
-          if (getVars) csvData.push(JSON.stringify(i.vars, null, 0))
+          if (getVars) csvData.push(i.vars.join(', '))
 
           return csvData
         }),
@@ -769,7 +771,7 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveMarkdown() {
-    const {actions, mdPath, getPermissions, getRunsOn, getUses, getVars} = this
+    const {actions, mdPath, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
 
     try {
       let header = 'owner | repo | workflow'
@@ -785,6 +787,11 @@ ${dim('(this could take a while...)')}`)
         headerBreak += ' | ---'
       }
 
+      if (getSecrets) {
+        header += ' | secrets'
+        headerBreak += ' | ---'
+      }
+
       if (getUses) {
         header += ' | uses'
         headerBreak += ' | ---'
@@ -796,12 +803,14 @@ ${dim('(this could take a while...)')}`)
       }
 
       const mdData = []
-      for (const {owner, repo, workflow, permissions, runsOn, uses, vars} of actions) {
+      for (const {owner, repo, workflow, permissions, runsOn, secrets, uses, vars} of actions) {
         const workflowLink = `https://github.com/${owner}/${repo}/blob/HEAD/${workflow}`
         let mdStr = `${owner} | ${repo} | [${workflow}](${workflowLink})`
 
         if (getPermissions) {
-          mdStr += ` | ${permissions && permissions.length > 0 ? `\`${permissions.join(`\`,\``)}\`` : ''}`
+          mdStr += ` | ${
+            permissions && permissions.length > 0 ? `<ul><li>\`${permissions.join(`\`</li><li>\``)}\`</li></ul>` : ''
+          }`
         }
 
         if (getRunsOn) {
@@ -813,6 +822,10 @@ ${dim('(this could take a while...)')}`)
           })
 
           mdStr += ` | ${v && v.length > 0 ? v.join(', ') : ''}`
+        }
+
+        if (getSecrets) {
+          mdStr += ` | ${secrets && secrets.length > 0 ? `<ul><li>\`${secrets.join(`\`</li><li>\``)}\`</li></ul>` : ''}`
         }
 
         if (getUses && uses) {
@@ -836,7 +849,7 @@ ${dim('(this could take a while...)')}`)
         }
 
         if (getVars) {
-          mdStr += ` | ${vars && vars.length > 0 ? `\`${vars.join(`\`,\``)}\`` : ''}`
+          mdStr += ` | ${vars && vars.length > 0 ? `<ul><li>\`${vars.join(`\`</li><li>\``)}\`</li></ul>` : ''}`
         }
 
         mdData.push(mdStr)
