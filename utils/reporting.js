@@ -163,6 +163,7 @@ const REPO_QUERY = `query ($owner: String!, $name: String!) {
  * @param {boolean}                         [options.getSecrets=false]
  * @param {boolean}                         [options.getUses=false]
  * @param {boolean}                         [options.isExcluded=false]
+ * @param {string}                          [options.getVars=false]
  * @param {string}                          [cursor=null]
  * @param {Action[]}                        [records=[]]
  *
@@ -178,6 +179,7 @@ const findActions = async (
     getSecrets = false,
     getUses = false,
     isExcluded = false,
+    getVars = false,
   },
   cursor = null,
   records = [],
@@ -243,6 +245,10 @@ const findActions = async (
 
             if (getUses) {
               info.uses = findUses(content, isExcluded)
+            }
+
+            if (getVars) {
+              info.vars = findVars(content)
             }
           } catch (err) {
             console.warn(red(`malformed yml: https://github.com/${owner}/${name}/blob/HEAD/${wf.path}`))
@@ -420,6 +426,28 @@ const getUnique = actions => {
   return unique
 }
 
+const varsRegex = /\$\{\{\s?vars\.(.*)\s?\}\}/g
+/**
+ * @private
+ * @function findVars
+ *
+ * @param {string}  text
+ *
+ * @returns {string[]}
+ */
+const findVars = text => {
+  const vars = []
+  const matchVars = [...text.matchAll(varsRegex)]
+
+  matchVars.map(m => {
+    const v = m[1].trim()
+
+    if (!vars.includes(v)) vars.push(v)
+  })
+
+  return vars
+}
+
 class Reporting {
   /**
    * @param {object}          options
@@ -434,6 +462,7 @@ class Reporting {
    * @param {boolean}         [options.flags.getUses=false]
    * @param {boolean}         [options.flags.isUnique=false]
    * @param {boolean}         [options.flags.isExcluded=false]
+   * @param {boolean}         [options.flags.getVars=false]
    * @param {object}          options.outputs
    * @param {string}          [options.outputs.csvPath=undefined]
    * @param {string}          [options.outputs.mdPath=undefined]
@@ -451,6 +480,7 @@ class Reporting {
       getUses = false,
       isUnique = false,
       isExcluded = false,
+      getVars = false,
     },
     outputs: {csvPath = undefined, mdPath = undefined, jsonPath = undefined},
   }) {
@@ -465,6 +495,7 @@ class Reporting {
     this.getUses = getUses
     this.isUnique = isUnique
     this.isExcluded = isExcluded
+    this.getVars = getVars
 
     this.csvPath = csvPath
     this.mdPath = mdPath
@@ -508,6 +539,7 @@ class Reporting {
       getUses,
       isUnique,
       isExcluded,
+      getVars,
     } = this
 
     const f = []
@@ -515,6 +547,7 @@ class Reporting {
     if (getRunsOn) f.push('runs-on')
     if (getSecrets) f.push('secrets')
     if (getUses) f.push('uses')
+    if (getVars) f.push('vars')
 
     console.log(`Gathering GitHub Actions ${yellow(`${f.join(', ')}`)} for ${blue(enterprise || owner || repository)}
 ${dim('(this could take a while...)')}`)
@@ -536,6 +569,7 @@ ${dim('(this could take a while...)')}`)
             getSecrets,
             getUses,
             isExcluded,
+            getVars,
           },
           null,
           actions,
@@ -557,6 +591,7 @@ ${dim('(this could take a while...)')}`)
           getSecrets,
           getUses,
           isExcluded,
+          getVars,
         },
         null,
         actions,
@@ -578,6 +613,7 @@ ${dim('(this could take a while...)')}`)
           getSecrets,
           getUses,
           isExcluded,
+          getVars,
         },
         null,
         actions,
@@ -611,13 +647,14 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveCsv() {
-    const {actions, csvPath, getPermissions, getRunsOn, getUses} = this
+    const {actions, csvPath, getPermissions, getRunsOn, getUses, getVars} = this
 
     try {
       const header = ['owner', 'repo', 'workflow']
       if (getPermissions) header.push('permissions')
       if (getRunsOn) header.push('runs-on')
       if (getUses) header.push('uses')
+      if (getVars) header.push('vars')
 
       // actions report
       const csv = stringify(
@@ -626,6 +663,7 @@ ${dim('(this could take a while...)')}`)
           if (getPermissions) csvData.push(JSON.stringify(i.permissions, null, 0))
           if (getRunsOn) csvData.push(i.runsOn.join(', '))
           if (getUses && i.uses) csvData.push(i.uses.join(', '))
+          if (getVars) csvData.push(JSON.stringify(i.vars, null, 0))
 
           return csvData
         }),
@@ -680,7 +718,7 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveJSON() {
-    const {actions, jsonPath, getPermissions, getRunsOn, getSecrets, getUses} = this
+    const {actions, jsonPath, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
 
     try {
       const json = actions.map(i => {
@@ -690,7 +728,7 @@ ${dim('(this could take a while...)')}`)
         if (getRunsOn) jsonData.runsOn = i.runsOn
         if (getSecrets) jsonData.secrets = i.secrets
         if (getUses) jsonData.uses = i.uses
-        jsonData.runsOn = i.runsOn
+        if (getVars) jsonData.vars = i.vars
 
         return jsonData
       })
@@ -731,7 +769,7 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveMarkdown() {
-    const {actions, mdPath, getPermissions, getRunsOn, getUses} = this
+    const {actions, mdPath, getPermissions, getRunsOn, getUses, getVars} = this
 
     try {
       let header = 'owner | repo | workflow'
@@ -752,13 +790,18 @@ ${dim('(this could take a while...)')}`)
         headerBreak += ' | ---'
       }
 
+      if (getVars) {
+        header += ' | vars'
+        headerBreak += ' | ---'
+      }
+
       const mdData = []
-      for (const {owner, repo, workflow, permissions, runsOn, uses} of actions) {
+      for (const {owner, repo, workflow, permissions, runsOn, uses, vars} of actions) {
         const workflowLink = `https://github.com/${owner}/${repo}/blob/HEAD/${workflow}`
         let mdStr = `${owner} | ${repo} | [${workflow}](${workflowLink})`
 
         if (getPermissions) {
-          mdStr += ` | ${permissions && permissions.length > 0 ? `\`${JSON.stringify(permissions, null, 0)}\`` : 'n/a'}`
+          mdStr += ` | ${permissions && permissions.length > 0 ? `\`${permissions.join(`\`,\``)}\`` : ''}`
         }
 
         if (getRunsOn) {
@@ -769,13 +812,13 @@ ${dim('(this could take a while...)')}`)
             return i
           })
 
-          mdStr += ` | ${v && v.length > 0 ? v.join(', ') : 'n/a'}`
+          mdStr += ` | ${v && v.length > 0 ? v.join(', ') : ''}`
         }
 
         if (getUses && uses) {
           // skip if not iterable
           if (uses === null || uses === undefined || typeof uses[Symbol.iterator] !== 'function') {
-            mdStr += ' | n/a'
+            mdStr += ' | '
             continue
           }
 
@@ -789,7 +832,11 @@ ${dim('(this could take a while...)')}`)
             }
           }
 
-          mdStr += ` | ${usesLinks.length > 0 ? `<ul><li>${usesLinks.join('</li><li>')}</li></ul>` : 'n/a'}`
+          mdStr += ` | ${usesLinks.length > 0 ? `<ul><li>${usesLinks.join('</li><li>')}</li></ul>` : ''}`
+        }
+
+        if (getVars) {
+          mdStr += ` | ${vars && vars.length > 0 ? `\`${vars.join(`\`,\``)}\`` : ''}`
         }
 
         mdData.push(mdStr)
