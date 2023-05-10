@@ -37,6 +37,7 @@ const cli = meow(
                       Only applies to ${yellow(`--uses`)}.`,
                       )}
                       ${dim(`Will create an additional ${bold('*-unique.{csv,json,md}')} report file.`)}
+    ${yellow(`--vars`)}            Report ${bold('vars')} used.
 
   ${bold('Report output options')}
     ${yellow(`--csv`)}             Path to save CSV output ${dim('(e.g. /path/to/reports/report.csv)')}.
@@ -100,6 +101,10 @@ const cli = meow(
       unique: {
         default: false,
       },
+      vars: {
+        type: 'boolean',
+        default: false,
+      },
       csv: {
         type: 'string',
       },
@@ -138,6 +143,7 @@ const cli = meow(
       uses,
       unique: _unique,
       exclude,
+      vars,
     } = cli.flags
 
     help && cli.showHelp(0)
@@ -184,6 +190,7 @@ const cli = meow(
         getUses: uses,
         isUnique: uniqueFlag,
         isExcluded: exclude,
+        getVars: vars,
       },
       outputs: {
         csvPath: csv,
