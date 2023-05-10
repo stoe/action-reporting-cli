@@ -159,6 +159,7 @@ const REPO_QUERY = `query ($owner: String!, $name: String!) {
  * @param {string}                          [options.owner=null]
  * @param {string}                          [options.repo=null]
  * @param {boolean}                         [options.getPermissions=false]
+ * @param {boolean}                         [options.getRunsOn=false]
  * @param {boolean}                         [options.getUses=false]
  * @param {boolean}                         [options.isExcluded=false]
  * @param {string}                          [cursor=null]
@@ -168,7 +169,7 @@ const REPO_QUERY = `query ($owner: String!, $name: String!) {
  */
 const findActions = async (
   octokit,
-  {owner = null, repo = null, getPermissions = false, getUses = false, isExcluded = false},
+  {owner = null, repo = null, getPermissions = false, getRunsOn = false, getUses = false, isExcluded = false},
   cursor = null,
   records = [],
 ) => {
@@ -223,6 +224,10 @@ const findActions = async (
               info.permissions = findPermissions(yaml)
             }
 
+            if (getRunsOn) {
+              info.runsOn = findRunsOn(yaml)
+            }
+
             if (getUses) {
               info.uses = findUses(content, isExcluded)
             }
@@ -239,7 +244,7 @@ const findActions = async (
       // wait 1s between requests
       wait(1000)
 
-      await findActions(octokit, {owner, repo, getPermissions, getUses, isExcluded}, pi.endCursor, records)
+      await findActions(octokit, {owner, repo, getPermissions, getRunsOn, getUses, isExcluded}, pi.endCursor, records)
     }
   } catch (err) {
     // do nothing
@@ -249,9 +254,9 @@ const findActions = async (
 const usesRegex = /([^\s+]|[^\t+])uses: (.*)/g
 const findUses = (text, isExcluded) => {
   const uses = []
-  const match = [...text.matchAll(usesRegex)]
+  const matchUses = [...text.matchAll(usesRegex)]
 
-  match.map(m => {
+  matchUses.map(m => {
     const u = m[2].trim()
     if (u.indexOf('/') < 0 && u.indexOf('.') < 0) return
 
@@ -262,6 +267,42 @@ const findUses = (text, isExcluded) => {
   })
 
   return uses
+}
+
+/**
+ * @private
+ * @function findRunsOn
+ *
+ * @param {object}  search
+ * @param {any[]}   [results=[]]
+ *
+ * @returns {any[]}
+ */
+const findRunsOn = (search, results = []) => {
+  const key = 'runs-on'
+  const res = results
+
+  for (const k in search) {
+    const value = search[k]
+
+    if (k !== key && typeof value === 'object') {
+      findRunsOn(value, res)
+    }
+
+    if (k === key && typeof value === 'object') {
+      for (const i in value) {
+        const v = value[i]
+
+        if (!res.includes(v)) res.push(v)
+      }
+    }
+
+    if (k === key && typeof value === 'string') {
+      if (!res.includes(value)) res.push(value)
+    }
+  }
+
+  return res
 }
 
 /**
@@ -346,6 +387,7 @@ class Reporting {
    * @param {string}          [options.mdPath=undefined]
    * @param {string}          [options.jsonPath=undefined]
    * @param {boolean}         [options.getPermissions=false]
+   * @param {boolean}         [options.getRunsOn=false]
    * @param {boolean}         [options.getUses=false]
    * @param {boolean|'both'}  [options.isUnique=false]
    * @param {boolean}         [options.isExcluded=false]
@@ -359,6 +401,7 @@ class Reporting {
     mdPath = undefined,
     jsonPath = undefined,
     getPermissions = false,
+    getRunsOn = false,
     getUses = false,
     isUnique = false,
     isExcluded = false,
@@ -371,6 +414,7 @@ class Reporting {
     this.mdPath = mdPath
     this.jsonPath = jsonPath
     this.getPermissions = getPermissions
+    this.getRunsOn = getRunsOn
     this.getUses = getUses
     this.isUnique = isUnique
     this.isExcluded = isExcluded
@@ -402,7 +446,7 @@ class Reporting {
    * @returns Action[]
    */
   async get() {
-    const {octokit, enterprise, owner, repository, getPermissions, getUses, isUnique, isExcluded} = this
+    const {octokit, enterprise, owner, repository, getPermissions, getRunsOn, getUses, isUnique, isExcluded} = this
 
     console.log(`
 Gathering GitHub Actions for ${blue(enterprise || owner || repository)} ${
@@ -424,6 +468,7 @@ ${dim('(this could take a while...)')}
             owner: org,
             repo: null,
             getPermissions,
+            getRunsOn,
             getUses,
             isExcluded,
           },
@@ -443,6 +488,7 @@ ${dim('(this could take a while...)')}
           owner,
           repo: null,
           getPermissions,
+          getRunsOn,
           getUses,
           isExcluded,
         },
@@ -462,6 +508,7 @@ ${dim('(this could take a while...)')}
           owner: _o,
           repo: _r,
           getPermissions,
+          getRunsOn,
           getUses,
           isExcluded,
         },
@@ -497,11 +544,12 @@ ${dim('(this could take a while...)')}
    * @throws {Error}
    */
   async saveCsv() {
-    const {actions, csvPath, getPermissions, getUses} = this
+    const {actions, csvPath, getPermissions, getRunsOn, getUses} = this
 
     try {
       const header = ['owner', 'repo', 'workflow']
       if (getPermissions) header.push('permissions')
+      if (getRunsOn) header.push('runs-on')
       if (getUses) header.push('uses')
 
       // actions report
@@ -509,6 +557,7 @@ ${dim('(this could take a while...)')}
         actions.map(i => {
           const csvData = [i.owner, i.repo, i.workflow]
           if (getPermissions) csvData.push(JSON.stringify(i.permissions, null, 0))
+          if (getRunsOn) csvData.push(i.runsOn.join(', '))
           if (getUses && i.uses) csvData.push(i.uses.join(', '))
 
           return csvData
@@ -564,14 +613,16 @@ ${dim('(this could take a while...)')}
    * @throws {Error}
    */
   async saveJSON() {
-    const {actions, jsonPath, getPermissions, getUses} = this
+    const {actions, jsonPath, getPermissions, getRunsOn, getUses} = this
 
     try {
       const json = actions.map(i => {
         const jsonData = {owner: i.owner, repo: i.repo, workflow: i.workflow}
 
         if (getPermissions) jsonData.permissions = i.permissions
+        if (getRunsOn) jsonData.runsOn = i.runsOn
         if (getUses) jsonData.uses = i.uses
+        jsonData.runsOn = i.runsOn
 
         return jsonData
       })
@@ -612,7 +663,7 @@ ${dim('(this could take a while...)')}
    * @throws {Error}
    */
   async saveMarkdown() {
-    const {actions, mdPath, getPermissions, getUses} = this
+    const {actions, mdPath, getPermissions, getRunsOn, getUses} = this
 
     try {
       let header = 'owner | repo | workflow'
@@ -623,18 +674,34 @@ ${dim('(this could take a while...)')}
         headerBreak += ' | ---'
       }
 
+      if (getRunsOn) {
+        header += ' | runs-on'
+        headerBreak += ' | ---'
+      }
+
       if (getUses) {
         header += ' | uses'
         headerBreak += ' | ---'
       }
 
       const mdData = []
-      for (const {owner, repo, workflow, permissions, uses} of actions) {
+      for (const {owner, repo, workflow, permissions, runsOn, uses} of actions) {
         const workflowLink = `https://github.com/${owner}/${repo}/blob/HEAD/${workflow}`
         let mdStr = `${owner} | ${repo} | [${workflow}](${workflowLink})`
 
         if (getPermissions) {
           mdStr += ` | ${permissions && permissions.length > 0 ? `\`${JSON.stringify(permissions, null, 0)}\`` : 'n/a'}`
+        }
+
+        if (getRunsOn) {
+          const v = runsOn.map(i => {
+            if (i.indexOf('matrix') > -1) {
+              i = `\`${i}\``
+            }
+            return i
+          })
+
+          mdStr += ` | ${v && v.length > 0 ? v.join(', ') : 'n/a'}`
         }
 
         if (getUses && uses) {

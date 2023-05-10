@@ -21,6 +21,7 @@ $ npx @stoe/action-reporting-cli [--options]
 
 - `--token`, `-t` GitHub Personal Access Token (PAT) (default `GITHUB_TOKEN`).
 - `--permissions` Report `permissions` values for `GITHUB_TOKEN`.
+- `--runs-on` Report `runs-on` values.
 - `--uses` Report `uses` values.
 - `--exclude` Exclude GitHub Actions created by GitHub.
   From https://github.com/actions and https://github.com/github organizations.
