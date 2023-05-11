@@ -22,6 +22,7 @@ const cli = meow(
     ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
 
   ${bold('Additional options')}
+    ${yellow(`--listeners`)}       Report ${bold('on')} listeners used.
     ${yellow(`--permissions`)}     Report ${bold('permissions')} values for GITHUB_TOKEN.
     ${yellow(`--runs-on`)}         Report ${bold('runs-on')} values.
     ${yellow(`--secrets`)}         Report ${bold('secrets')} used.
@@ -78,6 +79,10 @@ const cli = meow(
         shortFlag: 'r',
         isMultiple: false,
       },
+      listeners: {
+        type: 'boolean',
+        default: false,
+      },
       permissions: {
         type: 'boolean',
         default: false,
@@ -127,24 +132,9 @@ const cli = meow(
 ;(async () => {
   try {
     // Get options/flags
-    const {
-      help,
-      version,
-      enterprise,
-      owner,
-      repository,
-      csv,
-      md,
-      json,
-      token,
-      permissions,
-      runsOn,
-      secrets,
-      uses,
-      unique: _unique,
-      exclude,
-      vars,
-    } = cli.flags
+    const {help, version, enterprise, owner, repository, csv, md, json, token, unique: _unique, exclude} = cli.flags
+
+    const {listeners, permissions, runsOn, secrets, uses, vars} = cli.flags
 
     help && cli.showHelp(0)
     version && cli.showVersion(0)
@@ -184,6 +174,7 @@ const cli = meow(
       owner,
       repository,
       flags: {
+        getListeners: listeners,
         getPermissions: permissions,
         getRunsOn: runsOn,
         getSecrets: secrets,

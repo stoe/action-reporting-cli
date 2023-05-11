@@ -158,6 +158,7 @@ const REPO_QUERY = `query ($owner: String!, $name: String!) {
  * @param {object}                          options
  * @param {string}                          [options.owner=null]
  * @param {string}                          [options.repo=null]
+ * @param {boolean}                         [options.getListeners=false]
  * @param {boolean}                         [options.getPermissions=false]
  * @param {boolean}                         [options.getRunsOn=false]
  * @param {boolean}                         [options.getSecrets=false]
@@ -174,6 +175,7 @@ const findActions = async (
   {
     owner = null,
     repo = null,
+    getListeners = false,
     getPermissions = false,
     getRunsOn = false,
     getSecrets = false,
@@ -231,8 +233,12 @@ const findActions = async (
           try {
             const yaml = load(content, 'utf8')
 
+            if (getListeners) {
+              info.listeners = findObject('on', yaml)
+            }
+
             if (getPermissions) {
-              info.permissions = findPermissions(yaml)
+              info.permissions = findObject('permissions', yaml)
             }
 
             if (getRunsOn) {
@@ -272,27 +278,42 @@ const findActions = async (
 
 /**
  * @private
- * @function findPermissions
+ * @function findObject
  *
+ * @param {string}  key
  * @param {object}  search
  * @param {any[]}   [results=[]]
  *
  * @returns {any[]}
  */
-const findPermissions = (search, results = []) => {
-  const key = 'permissions'
+const findObject = (key, search, results = []) => {
   const res = results
 
   for (const k in search) {
     const value = search[k]
 
     if (k !== key && typeof value === 'object') {
-      findPermissions(value, res)
+      findObject(key, value, res)
     }
 
     if (k === key && typeof value === 'object') {
       for (const i in value) {
-        const v = `${i}: ${value[i]}`
+        let v = ''
+
+        switch (key) {
+          case 'on':
+            if (!value[i]) {
+              v = i
+            } else {
+              v = `${i}: ${JSON.stringify(value[i])}`.replace(/"/g, '')
+            }
+            break
+          case 'permissions':
+            v = `${i}: ${value[i]}`
+            break
+          default:
+            break
+        }
 
         if (!res.includes(v)) res.push(v)
       }
@@ -456,6 +477,7 @@ class Reporting {
    * @param {string}          options.owner
    * @param {string}          options.repository
    * @param {object}          options.flags
+   * @param {boolean}         [options.flags.getListeners=false]
    * @param {boolean}         [options.flags.getPermissions=false]
    * @param {boolean}         [options.flags.getRunsOn=false]
    * @param {boolean}         [options.flags.getSecrets=false]
@@ -474,6 +496,7 @@ class Reporting {
     owner,
     repository,
     flags: {
+      getListeners = false,
       getPermissions = false,
       getRunsOn = false,
       getSecrets = false,
@@ -489,6 +512,7 @@ class Reporting {
     this.owner = owner
     this.repository = repository
 
+    this.getListeners = getListeners
     this.getPermissions = getPermissions
     this.getRunsOn = getRunsOn
     this.getSecrets = getSecrets
@@ -533,6 +557,7 @@ class Reporting {
       enterprise,
       owner,
       repository,
+      getListeners,
       getPermissions,
       getRunsOn,
       getSecrets,
@@ -543,13 +568,16 @@ class Reporting {
     } = this
 
     const f = []
+    if (getListeners) f.push('listeners')
     if (getPermissions) f.push('permissions')
     if (getRunsOn) f.push('runs-on')
     if (getSecrets) f.push('secrets')
     if (getUses) f.push('uses')
     if (getVars) f.push('vars')
 
-    console.log(`Gathering GitHub Actions ${yellow(`${f.join(', ')}`)} for ${blue(enterprise || owner || repository)}
+    console.log(`Gathering GitHub Actions${f.length < 1 ? '' : yellow(` ${f.join(', ')}`)} for ${blue(
+      enterprise || owner || repository,
+    )}
 ${dim('(this could take a while...)')}`)
 
     const actions = []
@@ -564,6 +592,7 @@ ${dim('(this could take a while...)')}`)
           {
             owner: org,
             repo: null,
+            getListeners,
             getPermissions,
             getRunsOn,
             getSecrets,
@@ -586,6 +615,7 @@ ${dim('(this could take a while...)')}`)
         {
           owner,
           repo: null,
+          getListeners,
           getPermissions,
           getRunsOn,
           getSecrets,
@@ -608,6 +638,7 @@ ${dim('(this could take a while...)')}`)
         {
           owner: _o,
           repo: _r,
+          getListeners,
           getPermissions,
           getRunsOn,
           getSecrets,
@@ -647,10 +678,11 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveCsv() {
-    const {actions, csvPath, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
+    const {actions, csvPath, getListeners, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
 
     try {
       const header = ['owner', 'repo', 'workflow']
+      if (getListeners) header.push('listeners')
       if (getPermissions) header.push('permissions')
       if (getRunsOn) header.push('runs-on')
       if (getSecrets) header.push('secrets')
@@ -661,6 +693,7 @@ ${dim('(this could take a while...)')}`)
       const csv = stringify(
         actions.map(i => {
           const csvData = [i.owner, i.repo, i.workflow]
+          if (getListeners) csvData.push(i.listeners.join(', '))
           if (getPermissions) csvData.push(i.permissions.join(', '))
           if (getRunsOn) csvData.push(i.runsOn.join(', '))
           if (getSecrets) csvData.push(i.secrets.join(', '))
@@ -720,12 +753,13 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveJSON() {
-    const {actions, jsonPath, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
+    const {actions, jsonPath, getListeners, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
 
     try {
       const json = actions.map(i => {
         const jsonData = {owner: i.owner, repo: i.repo, workflow: i.workflow}
 
+        if (getListeners) jsonData.listeners = i.listeners
         if (getPermissions) jsonData.permissions = i.permissions
         if (getRunsOn) jsonData.runsOn = i.runsOn
         if (getSecrets) jsonData.secrets = i.secrets
@@ -771,11 +805,16 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveMarkdown() {
-    const {actions, mdPath, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
+    const {actions, mdPath, getListeners, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
 
     try {
       let header = 'owner | repo | workflow'
       let headerBreak = '--- | --- | ---'
+
+      if (getListeners) {
+        header += ' | listeners'
+        headerBreak += ' | ---'
+      }
 
       if (getPermissions) {
         header += ' | permissions'
@@ -803,9 +842,15 @@ ${dim('(this could take a while...)')}`)
       }
 
       const mdData = []
-      for (const {owner, repo, workflow, permissions, runsOn, secrets, uses, vars} of actions) {
+      for (const {owner, repo, workflow, listeners, permissions, runsOn, secrets, uses, vars} of actions) {
         const workflowLink = `https://github.com/${owner}/${repo}/blob/HEAD/${workflow}`
         let mdStr = `${owner} | ${repo} | [${workflow}](${workflowLink})`
+
+        if (getListeners) {
+          mdStr += ` | ${
+            listeners && listeners.length > 0 ? `<ul><li>\`${listeners.join(`\`</li><li>\``)}\`</li></ul>` : ''
+          }`
+        }
 
         if (getPermissions) {
           mdStr += ` | ${
