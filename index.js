@@ -19,28 +19,32 @@ const cli = meow(
                         )}) will be returned.`,
                       )}
     ${yellow(`--repository`)}, ${yellow(`-r`)}  GitHub repository name with owner ${dim('(e.g. owner/repo)')}.
-    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
 
   ${bold('Additional options')}
+    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
+
+  ${bold('Report options')}
+    ${yellow(`--all`)}             Report all below.
+
     ${yellow(`--listeners`)}       Report ${bold('on')} listeners used.
     ${yellow(`--permissions`)}     Report ${bold('permissions')} values for GITHUB_TOKEN.
     ${yellow(`--runs-on`)}         Report ${bold('runs-on')} values.
     ${yellow(`--secrets`)}         Report ${bold('secrets')} used.
     ${yellow(`--uses`)}            Report ${bold('uses')} values.
-    ${yellow(`--exclude`)}         Exclude GitHub Actions created by GitHub.
-                      ${dim(
-                        `From https://github.com/actions and https://github.com/github organizations.
-                      Only applies to ${yellow(`--uses`)}.`,
-                      )}
-    ${yellow(`--unique`)}          List unique GitHub Actions.
-                      ${dim(
-                        `Possible values are ${yellow('true')}, ${yellow('false')} and ${yellow('both')}.
-                      Only applies to ${yellow(`--uses`)}.`,
-                      )}
-                      ${dim(`Will create an additional ${bold('*-unique.{csv,json,md}')} report file.`)}
+      ${yellow(`--exclude`)}         Exclude GitHub Actions created by GitHub.
+                        ${dim(
+                          `From https://github.com/actions and https://github.com/github organizations.
+                        Only applies to ${yellow(`--uses`)}.`,
+                        )}
+      ${yellow(`--unique`)}          List unique GitHub Actions.
+                        ${dim(
+                          `Possible values are ${yellow('true')}, ${yellow('false')} and ${yellow('both')}.
+                        Only applies to ${yellow(`--uses`)}.`,
+                        )}
+                        ${dim(`Will create an additional ${bold('*-unique.{csv,json,md}')} report file.`)}
     ${yellow(`--vars`)}            Report ${bold('vars')} used.
 
-  ${bold('Report output options')}
+  ${bold('Output options')}
     ${yellow(`--csv`)}             Path to save CSV output ${dim('(e.g. /path/to/reports/report.csv)')}.
     ${yellow(`--json`)}            Path to save JSON output ${dim('(e.g. /path/to/reports/report.json)')}.
     ${yellow(`--md`)}              Path to save markdown output ${dim('(e.g. /path/to/reports/report.md)')}.
@@ -79,6 +83,16 @@ const cli = meow(
         shortFlag: 'r',
         isMultiple: false,
       },
+      token: {
+        type: 'string',
+        shortFlag: 't',
+        default: process.env.GITHUB_TOKEN || '',
+      },
+      // reports
+      all: {
+        type: 'boolean',
+        default: false,
+      },
       listeners: {
         type: 'boolean',
         default: false,
@@ -110,6 +124,7 @@ const cli = meow(
         type: 'boolean',
         default: false,
       },
+      // outputs
       csv: {
         type: 'string',
       },
@@ -119,11 +134,6 @@ const cli = meow(
       json: {
         type: 'string',
       },
-      token: {
-        type: 'string',
-        shortFlag: 't',
-        default: process.env.GITHUB_TOKEN || '',
-      },
     },
   },
 )
@@ -132,9 +142,13 @@ const cli = meow(
 ;(async () => {
   try {
     // Get options/flags
-    const {help, version, enterprise, owner, repository, csv, md, json, token, unique: _unique, exclude} = cli.flags
+    const {help, version, enterprise, owner, repository, token, all, unique: _unique, exclude} = cli.flags
 
-    const {listeners, permissions, runsOn, secrets, uses, vars} = cli.flags
+    // Get report options/flags
+    let {listeners, permissions, runsOn, secrets, uses, vars} = cli.flags
+
+    // Get output options/flags
+    const {csv, md, json} = cli.flags
 
     help && cli.showHelp(0)
     version && cli.showVersion(0)
@@ -166,6 +180,15 @@ const cli = meow(
     const uniqueFlag = _unique === 'both' ? 'both' : _unique === 'true'
     if (![true, false, 'both'].includes(uniqueFlag)) {
       throw new Error('please provide a valid value for unique: true, false, both')
+    }
+
+    if (all) {
+      listeners = true
+      permissions = true
+      runsOn = true
+      secrets = true
+      uses = true
+      vars = true
     }
 
     const report = new Reporting({
