@@ -20,6 +20,11 @@ $ npx @stoe/action-reporting-cli [--options]
 ## Additional options
 
 - `--token`, `-t` GitHub Personal Access Token (PAT) (default `GITHUB_TOKEN`).
+
+## Report options
+
+- `--all` Report all below.
+- `--listeners` Report `on` listeners used.
 - `--permissions` Report `permissions` values for `GITHUB_TOKEN`.
 - `--runs-on` Report `runs-on` values.
 - `--secrets` Report `secrets` used.
@@ -51,11 +56,7 @@ $ npx @stoe/action-reporting-cli [--options]
 $ npx @stoe/action-reporting-cli \
   --token ghp_000000000000000000000000000000000000 \
   --enterprise my-enterprise \
-  --permissions \
-  --runs-on \
-  --secrets \
-  --uses \
-  --vars \
+  --all \
   --csv ./reports/actions.csv \
   --json ./reports/actions.json \
   --md ./reports/actions.md
@@ -72,20 +73,20 @@ $ npx @stoe/action-reporting-cli \
   --secrets \
   --uses \
   --vars \
-  --csv ./reports/actions.csv
+  --json ./reports/actions.json
 ```
 
 ```sh
 # Report on unique GitHub Actions in the `my-org/myrepo` GitHub repository.
 # Exclude GitHub Actions created by GitHub.
-# Save CSV report to `./reports/actions.CSV`.
+# Save CSV report to `./reports/actions.csv`.
 $ npx @stoe/action-reporting-cli \
   --token ghp_000000000000000000000000000000000000 \
   --repository my-org/myrepo \
   --uses \
   --exclude \
   --unique both \
-  --csv ./reports/actions.CSV
+  --csv ./reports/actions.csv
 ```
 
 ## License
