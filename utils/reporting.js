@@ -1,6 +1,7 @@
 import {Octokit} from '@octokit/core'
 import chalk from 'chalk'
 import {load} from 'js-yaml'
+import normalizeUrl from 'normalize-url'
 import {paginateRest} from '@octokit/plugin-paginate-rest'
 import {stringify} from 'csv-stringify/sync'
 import {throttling} from '@octokit/plugin-throttling'
@@ -489,6 +490,7 @@ class Reporting {
    * @param {string}          [options.outputs.csvPath=undefined]
    * @param {string}          [options.outputs.mdPath=undefined]
    * @param {string}          [options.outputs.jsonPath=undefined]
+   * @param {string}          [hostname=undefined]
    */
   constructor({
     token,
@@ -506,6 +508,7 @@ class Reporting {
       getVars = false,
     },
     outputs: {csvPath = undefined, mdPath = undefined, jsonPath = undefined},
+    hostname = undefined,
   }) {
     this.token = token
     this.enterprise = enterprise
@@ -525,6 +528,16 @@ class Reporting {
     this.mdPath = mdPath
     this.jsonPath = jsonPath
 
+    if (hostname) {
+      const h = normalizeUrl(hostname, {
+        removeTrailingSlash: true,
+        stripProtocol: true,
+      }).split('/')[0]
+      this.hostname = h
+
+      hostname = `https://${h}/api/v3`
+    }
+
     this.octokit = new MyOctokit({
       auth: token,
       throttle: {
@@ -539,6 +552,7 @@ class Reporting {
           return true
         },
       },
+      ...(hostname ? {baseUrl: hostname} : {}),
     })
 
     this.actions = []
@@ -565,6 +579,7 @@ class Reporting {
       isUnique,
       isExcluded,
       getVars,
+      hostname,
     } = this
 
     const f = []
@@ -577,14 +592,15 @@ class Reporting {
 
     console.log(`Gathering GitHub Actions${f.length < 1 ? '' : yellow(` ${f.join(', ')}`)} for ${blue(
       enterprise || owner || repository,
-    )}
+    )} ${hostname ? `on ${blue(hostname)}` : ''}
 ${dim('(this could take a while...)')}`)
 
     const actions = []
 
     if (enterprise) {
       const orgs = await getOrganizations(octokit, enterprise)
-      console.log(`${dim(`searching in %s enterprise organizations\n[%s]`)}`, orgs.length, orgs.join(', '))
+      const ol = orgs.length
+      console.log(`${dim(`searching in %s enterprise organizations\n%s`)}`, ol, ol > 10 ? '' : `[${orgs.join(', ')}]`)
 
       for await (const org of orgs) {
         await findActions(
