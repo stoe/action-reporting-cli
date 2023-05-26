@@ -1,5 +1,6 @@
 import {Octokit} from '@octokit/core'
 import chalk from 'chalk'
+import got from 'got'
 import {load} from 'js-yaml'
 import normalizeUrl from 'normalize-url'
 import {paginateRest} from '@octokit/plugin-paginate-rest'
@@ -10,6 +11,11 @@ import {writeFileSync} from 'fs'
 
 const {blue, dim, red, yellow} = chalk
 const MyOctokit = Octokit.plugin(throttling, paginateRest)
+const MyGot = got.extend({
+  retry: {
+    limit: 0,
+  },
+})
 
 const ORG_QUERY = `query ($enterprise: String!, $cursor: String = null) {
   enterprise(slug: $enterprise) {
@@ -557,6 +563,8 @@ class Reporting {
 
     this.actions = []
     this.unique = []
+
+    this.checkedURLs = new Map()
   }
 
   /**
@@ -821,7 +829,18 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveMarkdown() {
-    const {actions, mdPath, getListeners, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
+    const {
+      actions,
+      mdPath,
+      getListeners,
+      getPermissions,
+      getRunsOn,
+      getSecrets,
+      getUses,
+      getVars,
+      hostname,
+      checkedURLs,
+    } = this
 
     try {
       let header = 'owner | repo | workflow'
@@ -859,7 +878,7 @@ ${dim('(this could take a while...)')}`)
 
       const mdData = []
       for (const {owner, repo, workflow, listeners, permissions, runsOn, secrets, uses, vars} of actions) {
-        const workflowLink = `https://github.com/${owner}/${repo}/blob/HEAD/${workflow}`
+        const workflowLink = `https://${hostname}/${owner}/${repo}/blob/HEAD/${workflow}`
         let mdStr = `${owner} | ${repo} | [${workflow}](${workflowLink})`
 
         if (getListeners) {
@@ -897,12 +916,17 @@ ${dim('(this could take a while...)')}`)
           }
 
           const usesLinks = []
-          for (const action of uses) {
+          for await (const action of uses) {
             if (action.indexOf('./') === -1) {
               const [a, v] = action.split('@')
               const [o, r] = a.split('/')
+              let url = `https://github.com/${o}/${r}`
 
-              usesLinks.push(`[${o}/${r}](https://github.com/${o}/${r}) (\`${v}\`)`)
+              if (hostname) {
+                url = await checkURL(hostname, o, r, checkedURLs)
+              }
+
+              usesLinks.push(`[${o}/${r}](${url}) (\`${v}\`)`)
             }
           }
 
@@ -933,7 +957,7 @@ ${dim('(this could take a while...)')}`)
    * @throws {Error}
    */
   async saveMarkdownUnique() {
-    const {mdPath, getUses, isUnique, unique} = this
+    const {mdPath, getUses, isUnique, unique, hostname, checkedURLs} = this
     const pathUnique = mdPath.replace('.md', '-unique.md')
 
     if (!getUses || isUnique === false) {
@@ -941,12 +965,17 @@ ${dim('(this could take a while...)')}`)
     }
 
     try {
-      const uses = unique.map(i => {
+      const uses = unique.map(async i => {
         if (i.indexOf('./') === -1) {
           const [a, v] = i.split('@')
           const [o, r] = a.split('/')
+          let url = `https://github.com/${o}/${r}`
 
-          return `[${o}/${r}](https://github.com/${o}/${r}) (\`${v}\`)`
+          if (hostname) {
+            url = await checkURL(hostname, o, r, checkedURLs)
+          }
+
+          return `[${o}/${r}](https://${url}) (\`${v}\`)`
         } else {
           return i
         }
@@ -962,6 +991,36 @@ ${dim('(this could take a while...)')}`)
       throw error
     }
   }
+}
+
+/**
+ * @async
+ * @private
+ * @function checkURL
+ *
+ * @param {string}  hostname
+ * @param {string}  owner
+ * @param {string}  repo
+ * @param {Map}     checkedURLs
+ *
+ * @returns {string}
+ */
+const checkURL = async (hostname, owner, repo, checkedURLs) => {
+  let url = `https://github.com/${owner}/${repo}`
+
+  // skip if already checked
+  if (checkedURLs.has(url)) {
+    return url
+  }
+
+  try {
+    await MyGot.get(url, {cache: checkedURLs})
+  } catch (error) {
+    url = `https://${hostname}/${owner}/${repo}`
+  }
+
+  checkedURLs.set(url, true)
+  return url
 }
 
 export default Reporting
