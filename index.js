@@ -11,7 +11,9 @@ const cli = meow(
     ${blue(`action-reporting`)} ${yellow(`[options]`)}
 
   ${bold('Required options')} ${dim(`[one of]`)}
-    ${yellow(`--enterprise`)}, ${yellow(`-e`)}  GitHub Enterprise Cloud account slug ${dim('(e.g. enterprise)')}.
+    ${yellow(`--enterprise`)}, ${yellow(`-e`)}  GitHub Enterprise (Cloud|Server) account slug ${dim(
+    '(e.g. enterprise)',
+  )}.
     ${yellow(`--owner`)}, ${yellow(`-o`)}       GitHub organization/user login ${dim('(e.g. owner)')}.
                       ${dim(
                         `If ${yellow(`--owner`)} is a user, results for the authenticated user (${yellow(
@@ -21,7 +23,9 @@ const cli = meow(
     ${yellow(`--repository`)}, ${yellow(`-r`)}  GitHub repository name with owner ${dim('(e.g. owner/repo)')}.
 
   ${bold('Additional options')}
-    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
+    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) $w{dim('(default GITHUB_TOKEN)')}.
+    ${yellow(`--hostname`)}        GitHub Enterprise Server ${bold('hostname')} ${dim('(default api.github.com)')}.
+                      ${dim(`For example: ${yellow('github.example.com')}`)}
 
   ${bold('Report options')}
     ${yellow(`--all`)}             Report all below.
@@ -124,6 +128,9 @@ const cli = meow(
         type: 'boolean',
         default: false,
       },
+      hostname: {
+        type: 'string',
+      },
       // outputs
       csv: {
         type: 'string',
@@ -142,7 +149,7 @@ const cli = meow(
 ;(async () => {
   try {
     // Get options/flags
-    const {help, version, enterprise, owner, repository, token, all, unique: _unique, exclude} = cli.flags
+    const {help, version, enterprise, owner, repository, token, all, unique: _unique, exclude, hostname} = cli.flags
 
     // Get report options/flags
     let {listeners, permissions, runsOn, secrets, uses, vars} = cli.flags
@@ -211,6 +218,7 @@ const cli = meow(
         mdPath: md,
         jsonPath: json,
       },
+      hostname,
     })
 
     // get report

@@ -12,7 +12,7 @@ $ npx @stoe/action-reporting-cli [--options]
 
 ## Required options [one of]
 
-- `--enterprise`, `-e` GitHub Enterprise Cloud account slug (e.g. _enterprise_).
+- `--enterprise`, `-e` GitHub Enterprise (Cloud|Server) account slug (e.g. _enterprise_).
 - `--owner`, `-o` GitHub organization/user login (e.g. _owner_).
   If `--owner` is a user, results for the authenticated user (`--token`) will be returned.
 - `--repository`, `-r` GitHub repository name with owner (e.g. _owner/repo_).
@@ -20,6 +20,8 @@ $ npx @stoe/action-reporting-cli [--options]
 ## Additional options
 
 - `--token`, `-t` GitHub Personal Access Token (PAT) (default `GITHUB_TOKEN`).
+- `--hostname` GitHub Enterprise Server hostname (default `api.github.com`).<br/>
+  For example: `github.example.com`
 
 ## Report options
 
@@ -87,6 +89,17 @@ $ npx @stoe/action-reporting-cli \
   --exclude \
   --unique both \
   --csv ./reports/actions.csv
+```
+
+```sh
+# Report on everything in the `my-org` GitHub organization on `github.example.com` GitHub Enterprise Server.
+# Save JSON report to `./reports/actions.json`.
+$ npx @stoe/action-reporting-cli \
+  --hostname github.example.com \
+  --token ghp_000000000000000000000000000000000000 \
+  --owner my-org \
+  --all \
+  --json ./reports/actions.json
 ```
 
 ## License
