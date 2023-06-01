@@ -46,7 +46,7 @@
     "@octokit/plugin-throttling": "^6.0.0",
     "chalk": "^4.1.2, <6",
     "csv": "^6.3.1",
-    "got": "^12.6.0",
+    "got": "^13.0.0",
     "js-yaml": "^4.1.0",
     "meow": "^12.0.1",
     "normalize-url": "^8.0.0"
