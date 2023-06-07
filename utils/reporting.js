@@ -228,6 +228,40 @@ const findActions = async (
       // skip if we don't have content
       if (!workflows?.entries) continue
 
+      // https://docs.github.com/en/rest/actions/workflows#list-repository-workflows
+      // we're doubling down here with this request to get additional details
+      const {
+        data: {workflows: wfds},
+      } = await octokit.request('GET /repos/{owner}/{repo}/actions/workflows', {
+        owner,
+        repo: name,
+      })
+
+      // copy array into new array
+      const d = [...wfds]
+
+      for (const i in d) {
+        // https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow
+        const {
+          data: {workflow_runs: runs},
+        } = await octokit.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs', {
+          owner,
+          repo: name,
+          workflow_id: d[i].id,
+          per_page: 1,
+          page: 1,
+          status: 'completed',
+          exclude_pull_requests: true,
+          sort: 'desc',
+        })
+
+        if (runs && runs.length > 0) {
+          d[i].last_run_at = new Date(runs[0].updated_at).toISOString()
+        } else {
+          d[i].last_run_at = null
+        }
+      }
+
       for (const wf of workflows.entries) {
         // skip if not .yml or .yaml
         if (!['.yml', '.yaml'].includes(wf.extension)) continue
@@ -265,6 +299,16 @@ const findActions = async (
             }
           } catch (err) {
             console.warn(red(`malformed yml: https://github.com/${owner}/${name}/blob/HEAD/${wf.path}`))
+          }
+        }
+
+        for (const {name: n, state, path, created_at, updated_at, last_run_at} of d) {
+          if (path === wf.path) {
+            info.name = n
+            info.state = state
+            info.created_at = new Date(created_at).toISOString()
+            info.updated_at = new Date(updated_at).toISOString()
+            info.last_run_at = last_run_at ? new Date(last_run_at).toISOString() : ''
           }
         }
 
@@ -559,6 +603,9 @@ class Reporting {
         },
       },
       ...(hostname ? {baseUrl: hostname} : {}),
+      headers: {
+        'X-Github-Next-Global-ID1': 1,
+      },
     })
 
     this.actions = []
@@ -705,7 +752,8 @@ ${dim('(this could take a while...)')}`)
     const {actions, csvPath, getListeners, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
 
     try {
-      const header = ['owner', 'repo', 'workflow']
+      const header = ['owner', 'repo', 'name', 'state', 'workflow', 'created_at', 'updated_at', 'last_run_at']
+
       if (getListeners) header.push('listeners')
       if (getPermissions) header.push('permissions')
       if (getRunsOn) header.push('runs-on')
@@ -716,7 +764,8 @@ ${dim('(this could take a while...)')}`)
       // actions report
       const csv = stringify(
         actions.map(i => {
-          const csvData = [i.owner, i.repo, i.workflow]
+          const csvData = [i.owner, i.repo, i.name, i.state, i.workflow, i.created_at, i.updated_at, i.last_run_at]
+
           if (getListeners) csvData.push(i.listeners.join(', '))
           if (getPermissions) csvData.push(i.permissions.join(', '))
           if (getRunsOn) csvData.push(i.runsOn.join(', '))
@@ -781,7 +830,16 @@ ${dim('(this could take a while...)')}`)
 
     try {
       const json = actions.map(i => {
-        const jsonData = {owner: i.owner, repo: i.repo, workflow: i.workflow}
+        const jsonData = {
+          owner: i.owner,
+          repo: i.repo,
+          name: i.name,
+          state: i.state,
+          workflow: i.workflow,
+          created_at: i.created_at,
+          updated_at: i.updated_at,
+          last_run_at: i.last_run_at,
+        }
 
         if (getListeners) jsonData.listeners = i.listeners
         if (getPermissions) jsonData.permissions = i.permissions
@@ -843,8 +901,8 @@ ${dim('(this could take a while...)')}`)
     } = this
 
     try {
-      let header = 'owner | repo | workflow'
-      let headerBreak = '--- | --- | ---'
+      let header = 'owner | repo | name | state | workflow | created_at | updated_at | last_run_at'
+      let headerBreak = '--- | --- | --- | --- | --- | --- | --- | ---'
 
       if (getListeners) {
         header += ' | listeners'
@@ -877,9 +935,24 @@ ${dim('(this could take a while...)')}`)
       }
 
       const mdData = []
-      for (const {owner, repo, workflow, listeners, permissions, runsOn, secrets, uses, vars} of actions) {
+      for (const {
+        owner,
+        repo,
+        name,
+        state,
+        workflow,
+        created_at,
+        updated_at,
+        last_run_at,
+        listeners,
+        permissions,
+        runsOn,
+        secrets,
+        uses,
+        vars,
+      } of actions) {
         const workflowLink = `https://${hostname}/${owner}/${repo}/blob/HEAD/${workflow}`
-        let mdStr = `${owner} | ${repo} | [${workflow}](${workflowLink})`
+        let mdStr = `${owner} | ${repo} | ${name} | ${state} | [${workflow}](${workflowLink}) | ${created_at} | ${updated_at} | ${last_run_at}`
 
         if (getListeners) {
           mdStr += ` | ${
