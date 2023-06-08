@@ -782,7 +782,7 @@ ${dim('(this could take a while...)')}`)
     const {actions, csvPath, getListeners, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
 
     try {
-      const header = ['owner', 'repo', 'name', 'state', 'workflow', 'created_at', 'updated_at', 'last_run_at']
+      const header = ['owner', 'repo', 'name', 'workflow', 'state', 'created_at', 'updated_at', 'last_run_at']
 
       if (getListeners) header.push('listeners')
       if (getPermissions) header.push('permissions')
@@ -794,7 +794,7 @@ ${dim('(this could take a while...)')}`)
       // actions report
       const csv = stringify(
         actions.map(i => {
-          const csvData = [i.owner, i.repo, i.name, i.state, i.workflow, i.created_at, i.updated_at, i.last_run_at]
+          const csvData = [i.owner, i.repo, i.name, i.workflow, i.state, i.created_at, i.updated_at, i.last_run_at]
 
           if (getListeners) csvData.push(i.listeners.join(', '))
           if (getPermissions) csvData.push(i.permissions.join(', '))
@@ -864,8 +864,8 @@ ${dim('(this could take a while...)')}`)
           owner: i.owner,
           repo: i.repo,
           name: i.name,
-          state: i.state,
           workflow: i.workflow,
+          state: i.state,
           created_at: i.created_at,
           updated_at: i.updated_at,
           last_run_at: i.last_run_at,
@@ -931,7 +931,7 @@ ${dim('(this could take a while...)')}`)
     } = this
 
     try {
-      let header = 'owner | repo | name | state | workflow | created_at | updated_at | last_run_at'
+      let header = 'owner | repo | name | workflow | state | created_at | updated_at | last_run_at'
       let headerBreak = '--- | --- | --- | --- | --- | --- | --- | ---'
 
       if (getListeners) {
@@ -982,7 +982,7 @@ ${dim('(this could take a while...)')}`)
         vars,
       } of actions) {
         const workflowLink = `https://${hostname}/${owner}/${repo}/blob/HEAD/${workflow}`
-        let mdStr = `${owner} | ${repo} | ${name} | ${state} | [${workflow}](${workflowLink}) | ${created_at} | ${updated_at} | ${last_run_at}`
+        let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${state} | ${created_at} | ${updated_at} | ${last_run_at}`
 
         if (getListeners) {
           mdStr += ` | ${
