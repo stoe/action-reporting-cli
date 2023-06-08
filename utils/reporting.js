@@ -228,6 +228,43 @@ const findActions = async (
       // skip if we don't have content
       if (!workflows?.entries) continue
 
+      // https://docs.github.com/en/rest/actions/workflows#list-repository-workflows
+      // we're doubling down here with this request to get additional details
+      const {
+        data: {workflows: wfds},
+      } = await octokit.request('GET /repos/{owner}/{repo}/actions/workflows', {
+        owner,
+        repo: name,
+      })
+
+      // copy array into new array
+      const d = [...wfds]
+
+      for (const i in d) {
+        // https://docs.github.com/en/rest/actions/workflow-runs#list-workflow-runs-for-a-workflow
+        const {
+          data: {workflow_runs: runs},
+        } = await octokit.request('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs', {
+          owner,
+          repo: name,
+          workflow_id: d[i].id,
+          per_page: 1,
+          page: 1,
+          status: 'completed',
+          exclude_pull_requests: true,
+          sort: 'desc',
+        })
+
+        // wait 1s to avoid rate limit
+        wait(1000)
+
+        if (runs && runs.length > 0) {
+          d[i].last_run_at = new Date(runs[0].updated_at).toISOString()
+        } else {
+          d[i].last_run_at = null
+        }
+      }
+
       for (const wf of workflows.entries) {
         // skip if not .yml or .yaml
         if (!['.yml', '.yaml'].includes(wf.extension)) continue
@@ -268,12 +305,22 @@ const findActions = async (
           }
         }
 
+        for (const {name: n, state, path, created_at, updated_at, last_run_at} of d) {
+          if (path === wf.path) {
+            info.name = n
+            info.state = state
+            info.created_at = new Date(created_at).toISOString()
+            info.updated_at = new Date(updated_at).toISOString()
+            info.last_run_at = last_run_at ? new Date(last_run_at).toISOString() : ''
+          }
+        }
+
         records.push(info)
       }
     }
 
     if (pi && pi.hasNextPage) {
-      // wait 1s between requests
+      // wait additional 1s between pagination requests
       wait(1000)
 
       await findActions(octokit, {owner, repo, getPermissions, getRunsOn, getUses, isExcluded}, pi.endCursor, records)
@@ -476,6 +523,36 @@ const findVars = text => {
   return vars
 }
 
+/**
+ * @async
+ * @private
+ * @function checkURL
+ *
+ * @param {string}  hostname
+ * @param {string}  owner
+ * @param {string}  repo
+ * @param {Map}     checkedURLs
+ *
+ * @returns {string}
+ */
+const checkURL = async (hostname, owner, repo, checkedURLs) => {
+  let url = `https://github.com/${owner}/${repo}`
+
+  // skip if already checked
+  if (checkedURLs.has(url)) {
+    return url
+  }
+
+  try {
+    await MyGot.get(url, {cache: checkedURLs})
+  } catch (error) {
+    url = `https://${hostname}/${owner}/${repo}`
+  }
+
+  checkedURLs.set(url, true)
+  return url
+}
+
 class Reporting {
   /**
    * @param {object}          options
@@ -559,6 +636,9 @@ class Reporting {
         },
       },
       ...(hostname ? {baseUrl: hostname} : {}),
+      headers: {
+        'X-Github-Next-Global-ID1': 1,
+      },
     })
 
     this.actions = []
@@ -705,7 +785,8 @@ ${dim('(this could take a while...)')}`)
     const {actions, csvPath, getListeners, getPermissions, getRunsOn, getSecrets, getUses, getVars} = this
 
     try {
-      const header = ['owner', 'repo', 'workflow']
+      const header = ['owner', 'repo', 'name', 'workflow', 'state', 'created_at', 'updated_at', 'last_run_at']
+
       if (getListeners) header.push('listeners')
       if (getPermissions) header.push('permissions')
       if (getRunsOn) header.push('runs-on')
@@ -716,7 +797,8 @@ ${dim('(this could take a while...)')}`)
       // actions report
       const csv = stringify(
         actions.map(i => {
-          const csvData = [i.owner, i.repo, i.workflow]
+          const csvData = [i.owner, i.repo, i.name, i.workflow, i.state, i.created_at, i.updated_at, i.last_run_at]
+
           if (getListeners) csvData.push(i.listeners.join(', '))
           if (getPermissions) csvData.push(i.permissions.join(', '))
           if (getRunsOn) csvData.push(i.runsOn.join(', '))
@@ -781,7 +863,16 @@ ${dim('(this could take a while...)')}`)
 
     try {
       const json = actions.map(i => {
-        const jsonData = {owner: i.owner, repo: i.repo, workflow: i.workflow}
+        const jsonData = {
+          owner: i.owner,
+          repo: i.repo,
+          name: i.name,
+          workflow: i.workflow,
+          state: i.state,
+          created_at: i.created_at,
+          updated_at: i.updated_at,
+          last_run_at: i.last_run_at,
+        }
 
         if (getListeners) jsonData.listeners = i.listeners
         if (getPermissions) jsonData.permissions = i.permissions
@@ -843,8 +934,8 @@ ${dim('(this could take a while...)')}`)
     } = this
 
     try {
-      let header = 'owner | repo | workflow'
-      let headerBreak = '--- | --- | ---'
+      let header = 'owner | repo | name | workflow | state | created_at | updated_at | last_run_at'
+      let headerBreak = '--- | --- | --- | --- | --- | --- | --- | ---'
 
       if (getListeners) {
         header += ' | listeners'
@@ -877,9 +968,24 @@ ${dim('(this could take a while...)')}`)
       }
 
       const mdData = []
-      for (const {owner, repo, workflow, listeners, permissions, runsOn, secrets, uses, vars} of actions) {
+      for (const {
+        owner,
+        repo,
+        name,
+        state,
+        workflow,
+        created_at,
+        updated_at,
+        last_run_at,
+        listeners,
+        permissions,
+        runsOn,
+        secrets,
+        uses,
+        vars,
+      } of actions) {
         const workflowLink = `https://${hostname}/${owner}/${repo}/blob/HEAD/${workflow}`
-        let mdStr = `${owner} | ${repo} | [${workflow}](${workflowLink})`
+        let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${state} | ${created_at} | ${updated_at} | ${last_run_at}`
 
         if (getListeners) {
           mdStr += ` | ${
@@ -991,36 +1097,6 @@ ${dim('(this could take a while...)')}`)
       throw error
     }
   }
-}
-
-/**
- * @async
- * @private
- * @function checkURL
- *
- * @param {string}  hostname
- * @param {string}  owner
- * @param {string}  repo
- * @param {Map}     checkedURLs
- *
- * @returns {string}
- */
-const checkURL = async (hostname, owner, repo, checkedURLs) => {
-  let url = `https://github.com/${owner}/${repo}`
-
-  // skip if already checked
-  if (checkedURLs.has(url)) {
-    return url
-  }
-
-  try {
-    await MyGot.get(url, {cache: checkedURLs})
-  } catch (error) {
-    url = `https://${hostname}/${owner}/${repo}`
-  }
-
-  checkedURLs.set(url, true)
-  return url
 }
 
 export default Reporting
