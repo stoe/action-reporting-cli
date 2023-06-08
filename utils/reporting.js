@@ -1071,9 +1071,11 @@ ${dim('(this could take a while...)')}`)
     }
 
     try {
-      const uses = unique.map(async i => {
-        if (i.indexOf('./') === -1) {
-          const [a, v] = i.split('@')
+      const uses = []
+
+      for await (const u of unique) {
+        if (u.indexOf('./') === -1) {
+          const [a, v] = u.split('@')
           const [o, r] = a.split('/')
           let url = `https://github.com/${o}/${r}`
 
@@ -1081,13 +1083,14 @@ ${dim('(this could take a while...)')}`)
             url = await checkURL(hostname, o, r, checkedURLs)
           }
 
-          return `[${o}/${r}](https://${url}) (\`${v}\`)`
+          uses.push(`[${o}/${r}](${url}) (\`${v}\`)`)
         } else {
-          return i
+          uses.push(u)
         }
-      })
+      }
 
       const md = `### Unique GitHub Actions \`uses\`
+
 - ${uses.join('\n- ')}
 `
 
