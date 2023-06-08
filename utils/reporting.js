@@ -799,12 +799,12 @@ ${dim('(this could take a while...)')}`)
         actions.map(i => {
           const csvData = [i.owner, i.repo, i.name, i.workflow, i.state, i.created_at, i.updated_at, i.last_run_at]
 
-          if (getListeners) csvData.push(i.listeners.join(', '))
-          if (getPermissions) csvData.push(i.permissions.join(', '))
-          if (getRunsOn) csvData.push(i.runsOn.join(', '))
-          if (getSecrets) csvData.push(i.secrets.join(', '))
+          if (getListeners && i.listeners) csvData.push(i.listeners.join(', '))
+          if (getPermissions && i.permissions) csvData.push(i.permissions.join(', '))
+          if (getRunsOn && i.runsOn) csvData.push(i.runsOn.join(', '))
+          if (getSecrets && i.secrets) csvData.push(i.secrets.join(', '))
           if (getUses && i.uses) csvData.push(i.uses.join(', '))
-          if (getVars) csvData.push(i.vars.join(', '))
+          if (getVars && i.vars) csvData.push(i.vars.join(', '))
 
           return csvData
         }),
