@@ -255,6 +255,9 @@ const findActions = async (
           sort: 'desc',
         })
 
+        // wait 1s to avoid rate limit
+        wait(1000)
+
         if (runs && runs.length > 0) {
           d[i].last_run_at = new Date(runs[0].updated_at).toISOString()
         } else {
@@ -317,7 +320,7 @@ const findActions = async (
     }
 
     if (pi && pi.hasNextPage) {
-      // wait 1s between requests
+      // wait additional 1s between pagination requests
       wait(1000)
 
       await findActions(octokit, {owner, repo, getPermissions, getRunsOn, getUses, isExcluded}, pi.endCursor, records)
