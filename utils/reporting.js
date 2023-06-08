@@ -520,6 +520,36 @@ const findVars = text => {
   return vars
 }
 
+/**
+ * @async
+ * @private
+ * @function checkURL
+ *
+ * @param {string}  hostname
+ * @param {string}  owner
+ * @param {string}  repo
+ * @param {Map}     checkedURLs
+ *
+ * @returns {string}
+ */
+const checkURL = async (hostname, owner, repo, checkedURLs) => {
+  let url = `https://github.com/${owner}/${repo}`
+
+  // skip if already checked
+  if (checkedURLs.has(url)) {
+    return url
+  }
+
+  try {
+    await MyGot.get(url, {cache: checkedURLs})
+  } catch (error) {
+    url = `https://${hostname}/${owner}/${repo}`
+  }
+
+  checkedURLs.set(url, true)
+  return url
+}
+
 class Reporting {
   /**
    * @param {object}          options
@@ -1064,36 +1094,6 @@ ${dim('(this could take a while...)')}`)
       throw error
     }
   }
-}
-
-/**
- * @async
- * @private
- * @function checkURL
- *
- * @param {string}  hostname
- * @param {string}  owner
- * @param {string}  repo
- * @param {Map}     checkedURLs
- *
- * @returns {string}
- */
-const checkURL = async (hostname, owner, repo, checkedURLs) => {
-  let url = `https://github.com/${owner}/${repo}`
-
-  // skip if already checked
-  if (checkedURLs.has(url)) {
-    return url
-  }
-
-  try {
-    await MyGot.get(url, {cache: checkedURLs})
-  } catch (error) {
-    url = `https://${hostname}/${owner}/${repo}`
-  }
-
-  checkedURLs.set(url, true)
-  return url
 }
 
 export default Reporting
