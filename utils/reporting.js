@@ -305,8 +305,9 @@ const findActions = async (
           }
         }
 
-        for (const {name: n, state, path, created_at, updated_at, last_run_at} of d) {
+        for (const {node_id: id, name: n, state, path, created_at, updated_at, last_run_at} of d) {
           if (path === wf.path) {
+            info.id = id
             info.name = n
             info.state = state
             info.created_at = new Date(created_at).toISOString()
@@ -864,6 +865,7 @@ ${dim('(this could take a while...)')}`)
     try {
       const json = actions.map(i => {
         const jsonData = {
+          id: i.id,
           owner: i.owner,
           repo: i.repo,
           name: i.name,
