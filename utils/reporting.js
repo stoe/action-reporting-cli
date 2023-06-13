@@ -1000,11 +1000,11 @@ ${dim('(this could take a while...)')}`)
         }
 
         if (getRunsOn) {
-          const v = runsOn.map(i => {
-            if (i.indexOf('matrix') > -1) {
-              i = `\`${i}\``
+          const v = runsOn.map(ro => {
+            if (ro && ro.indexOf('matrix') > -1) {
+              ro = `\`${ro}\``
             }
-            return i
+            return ro
           })
 
           mdStr += ` | ${v && v.length > 0 ? v.join(', ') : ''}`
@@ -1023,7 +1023,7 @@ ${dim('(this could take a while...)')}`)
 
           const usesLinks = []
           for await (const action of uses) {
-            if (action.indexOf('./') === -1) {
+            if (action && action.indexOf('./') === -1) {
               const [a, v] = action.split('@')
               const [o, r] = a.split('/')
               let url = `https://github.com/${o}/${r}`
