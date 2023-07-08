@@ -10,7 +10,11 @@ import wait from './wait.js'
 import {writeFileSync} from 'fs'
 
 const {blue, dim, red, yellow} = chalk
-const MyOctokit = Octokit.plugin(throttling, paginateRest)
+const MyOctokit = Octokit.defaults({
+  headers: {
+    'X-Github-Next-Global-ID': 1,
+  },
+}).plugin(throttling, paginateRest)
 const MyGot = got.extend({
   retry: {
     limit: 0,
@@ -637,9 +641,6 @@ class Reporting {
         },
       },
       ...(hostname ? {baseUrl: hostname} : {}),
-      headers: {
-        'X-Github-Next-Global-ID1': 1,
-      },
     })
 
     this.actions = []
