@@ -184,7 +184,7 @@ const cli = meow(
       throw new Error('please provide a valid path for the JSON output')
     }
 
-    const uniqueFlag = _unique === 'both' ? 'both' : _unique === 'true'
+    let uniqueFlag = _unique === 'both' ? 'both' : _unique === 'true'
     if (![true, false, 'both'].includes(uniqueFlag)) {
       throw new Error('please provide a valid value for unique: true, false, both')
     }
@@ -196,6 +196,9 @@ const cli = meow(
       secrets = true
       uses = true
       vars = true
+
+      // if all is true, create unique report by default
+      uniqueFlag = 'both'
     }
 
     const report = new Reporting({
