@@ -27,6 +27,8 @@
     "no-console": "off",
     "i18n-text/no-en": "off",
     "import/extensions": "off",
+    "import/namespace": "off",
+    "import/no-deprecated": "off",
     "import/no-unresolved": "off"
   }
 }

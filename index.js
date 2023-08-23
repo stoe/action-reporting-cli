@@ -12,8 +12,8 @@ const cli = meow(
 
   ${bold('Required options')} ${dim(`[one of]`)}
     ${yellow(`--enterprise`)}, ${yellow(`-e`)}  GitHub Enterprise (Cloud|Server) account slug ${dim(
-    '(e.g. enterprise)',
-  )}.
+      '(e.g. enterprise)',
+    )}.
     ${yellow(`--owner`)}, ${yellow(`-o`)}       GitHub organization/user login ${dim('(e.g. owner)')}.
                       ${dim(
                         `If ${yellow(`--owner`)} is a user, results for the authenticated user (${yellow(
