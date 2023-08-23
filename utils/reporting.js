@@ -459,11 +459,14 @@ const findUses = (text, isExcluded) => {
   const matchUses = [...text.matchAll(usesRegex)]
 
   matchUses.map(m => {
-    const u = m[2].trim()
+    let u = m[2].trim()
     if (u.indexOf('/') < 0 && u.indexOf('.') < 0) return
 
     // exclude actions created by GitHub (owner: actions||github)
     if ((isExcluded && u.startsWith('actions/')) || u.startsWith('github/')) return
+
+    // strip '|" from uses
+    u = u.replace(/('|")/g, '').trim()
 
     if (!uses.includes(u)) uses.push(u)
   })
