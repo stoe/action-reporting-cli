@@ -1,6 +1,6 @@
 {
   "name": "@stoe/action-reporting-cli",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "type": "module",
   "description": "CLI to report on GitHub Actions",
   "keywords": [
