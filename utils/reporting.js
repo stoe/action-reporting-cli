@@ -468,6 +468,9 @@ const findUses = (text, isExcluded) => {
     // strip '|" from uses
     u = u.replace(/('|")/g, '').trim()
 
+    // remove comments from uses
+    u = u.split(/ #.*$/)[0].trim()
+
     if (!uses.includes(u)) uses.push(u)
   })
 
