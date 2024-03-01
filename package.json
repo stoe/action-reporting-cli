@@ -41,23 +41,23 @@
     "test": "eslint ."
   },
   "dependencies": {
-    "@octokit/core": "^5.0.0",
-    "@octokit/plugin-paginate-rest": "^9.0.0",
-    "@octokit/plugin-throttling": "^8.0.0",
+    "@octokit/core": "^6.0.1",
+    "@octokit/plugin-paginate-rest": "^9.2.1",
+    "@octokit/plugin-throttling": "^9.0.3",
     "chalk": "^4.1.2, <6",
-    "csv": "^6.3.1",
-    "got": "^14.0.0",
+    "csv": "^6.3.8",
+    "got": "^14.2.0",
     "js-yaml": "^4.1.0",
-    "meow": "^13.0.0",
+    "meow": "^13.2.0",
     "normalize-url": "^8.0.0"
   },
   "devDependencies": {
     "@github/prettier-config": "^0.0.6",
-    "@octokit/openapi-types": "^19.0.0",
-    "eslint": "^8.47.0",
-    "eslint-config-prettier": "^9.0.0",
-    "eslint-plugin-github": "^4.9.2",
-    "husky": "^9.0.7"
+    "@octokit/openapi-types": "^20.0.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-github": "^4.10.2",
+    "husky": "^9.0.11"
   },
   "husky": {
     "hooks": {
