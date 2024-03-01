@@ -41,9 +41,9 @@
     "test": "eslint ."
   },
   "dependencies": {
-    "@octokit/core": "^5.0.0",
+    "@octokit/core": "^6.0.1",
     "@octokit/plugin-paginate-rest": "^9.0.0",
-    "@octokit/plugin-throttling": "^8.0.0",
+    "@octokit/plugin-throttling": "^9.0.3",
     "chalk": "^4.1.2, <6",
     "csv": "^6.3.1",
     "got": "^14.0.0",
@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@github/prettier-config": "^0.0.6",
-    "@octokit/openapi-types": "^19.0.0",
+    "@octokit/openapi-types": "^20.0.0",
     "eslint": "^8.47.0",
     "eslint-config-prettier": "^9.0.0",
     "eslint-plugin-github": "^4.9.2",
