@@ -993,7 +993,7 @@ ${dim('(this could take a while...)')}`)
         uses,
         vars,
       } of actions) {
-        const workflowLink = `https://${hostname}/${owner}/${repo}/blob/HEAD/${workflow}`
+        const workflowLink = `https://${hostname || 'github.com'}/${owner}/${repo}/blob/HEAD/${workflow}`
         let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${state} | ${created_at} | ${updated_at} | ${last_run_at}`
 
         if (getListeners) {
