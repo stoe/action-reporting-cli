@@ -1032,16 +1032,25 @@ ${dim('(this could take a while...)')}`)
 
           const usesLinks = []
           for await (const action of uses) {
-            if (action && action.indexOf('./') === -1) {
-              const [a, v] = action.split('@')
-              const [o, r] = a.split('/')
-              let url = `https://github.com/${o}/${r}`
+            if (action) {
+              let a, v, url;
+              if (action.startsWith('./')) {
+                // Handle local actions
+                a = action;
+                v = 'local';
+                url = `https://github.com/${owner}/${repo}/blob/HEAD/${a}`;
+              } else {
+                // Handle actions from GitHub
+                [a, v] = action.split('@')
+                const [o, r] = a.split('/')
+                url = `https://github.com/${o}/${r}`
 
-              if (hostname) {
-                url = await checkURL(hostname, o, r, checkedURLs)
+                if (hostname) {
+                  url = await checkURL(hostname, o, r, checkedURLs)
+                }
               }
 
-              usesLinks.push(`[${o}/${r}](${url}) (\`${v}\`)`)
+              usesLinks.push(`[${a}](${url}) (\`${v}\`)`)
             }
           }
 
