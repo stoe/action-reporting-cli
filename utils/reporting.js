@@ -805,7 +805,16 @@ ${dim('(this could take a while...)')}`)
       // actions report
       const csv = stringify(
         actions.map(i => {
-          const csvData = [i.owner, i.repo, i.name, i.workflow, i.state || 'workflows not enabled in fork', i.created_at, i.updated_at, i.last_run_at]
+          const csvData = [
+            i.owner,
+            i.repo,
+            i.name,
+            i.workflow,
+            i.state || 'workflows not enabled in fork',
+            i.created_at,
+            i.updated_at,
+            i.last_run_at,
+          ]
 
           if (getListeners && i.listeners) csvData.push(i.listeners.join(', '))
           if (getPermissions && i.permissions) csvData.push(i.permissions.join(', '))
@@ -994,7 +1003,9 @@ ${dim('(this could take a while...)')}`)
         vars,
       } of actions) {
         const workflowLink = `https://${hostname || 'github.com'}/${owner}/${repo}/blob/HEAD/${workflow}`
-        let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${state || 'workflows not enabled in fork'} | ${created_at} | ${updated_at} | ${last_run_at}`
+        let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${
+          state || 'workflows not enabled in fork'
+        } | ${created_at} | ${updated_at} | ${last_run_at}`
 
         if (getListeners) {
           mdStr += ` | ${
@@ -1033,15 +1044,17 @@ ${dim('(this could take a while...)')}`)
           const usesLinks = []
           for await (const action of uses) {
             if (action) {
-              let a, v, url;
+              let a
+              let v
+              let url
               if (action.startsWith('./')) {
                 // Handle local actions
-                a = action;
-                v = 'local';
-                url = `https://github.com/${owner}/${repo}/blob/HEAD/${a}`;
+                a = action
+                v = 'local'
+                url = `https://github.com/${owner}/${repo}/blob/HEAD/${a}`
               } else {
                 // Handle actions from GitHub
-                [a, v] = action.split('@')
+                ;[a, v] = action.split('@')
                 const [o, r] = a.split('/')
                 url = `https://github.com/${o}/${r}`
 
