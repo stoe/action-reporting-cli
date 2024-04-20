@@ -805,7 +805,7 @@ ${dim('(this could take a while...)')}`)
       // actions report
       const csv = stringify(
         actions.map(i => {
-          const csvData = [i.owner, i.repo, i.name, i.workflow, i.state, i.created_at, i.updated_at, i.last_run_at]
+          const csvData = [i.owner, i.repo, i.name, i.workflow, i.state || 'workflows not enabled in fork', i.created_at, i.updated_at, i.last_run_at]
 
           if (getListeners && i.listeners) csvData.push(i.listeners.join(', '))
           if (getPermissions && i.permissions) csvData.push(i.permissions.join(', '))
@@ -877,7 +877,7 @@ ${dim('(this could take a while...)')}`)
           repo: i.repo,
           name: i.name,
           workflow: i.workflow,
-          state: i.state,
+          state: i.state || 'workflows not enabled in fork',
           created_at: i.created_at,
           updated_at: i.updated_at,
           last_run_at: i.last_run_at,
@@ -994,7 +994,7 @@ ${dim('(this could take a while...)')}`)
         vars,
       } of actions) {
         const workflowLink = `https://${hostname || 'github.com'}/${owner}/${repo}/blob/HEAD/${workflow}`
-        let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${state} | ${created_at} | ${updated_at} | ${last_run_at}`
+        let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${state || 'workflows not enabled in fork'} | ${created_at} | ${updated_at} | ${last_run_at}`
 
         if (getListeners) {
           mdStr += ` | ${
