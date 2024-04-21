@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: 'monthly'
     groups:
-      all-dependencies:
+      actions:
         patterns:
           - '*'
     commit-message:
