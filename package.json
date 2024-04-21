@@ -42,7 +42,7 @@
   },
   "dependencies": {
     "@octokit/core": "^6.0.1",
-    "@octokit/plugin-paginate-rest": "^10.0.0",
+    "@octokit/plugin-paginate-rest": "^11.1.1",
     "@octokit/plugin-throttling": "^9.0.3",
     "chalk": "^4.1.2, <6",
     "csv": "^6.3.8",
@@ -53,7 +53,7 @@
   },
   "devDependencies": {
     "@github/prettier-config": "^0.0.6",
-    "@octokit/openapi-types": "^20.0.0",
+    "@octokit/openapi-types": "^22.1.0",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-github": "^4.10.2",
