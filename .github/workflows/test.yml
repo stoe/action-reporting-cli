@@ -7,10 +7,9 @@ on:
     paths-ignore:
       - '*.md'
 
-permissions:
-  contents: read
-  packages: read
-
 jobs:
   test:
     uses: stoe/policies/.github/workflows/policy-node-test.yml@main
+    permissions:
+      contents: read
+      packages: read

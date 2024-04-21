@@ -5,14 +5,13 @@ on:
     tags:
       - 'v*.*.*'
 
-permissions:
-  contents: read
-  packages: write
-  id-token: write
-
 jobs:
   publish:
     uses: stoe/policies/.github/workflows/policy-node-publish.yml@main
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
     with:
       npm: true
       gh: true
