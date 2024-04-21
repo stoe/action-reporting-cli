@@ -805,7 +805,16 @@ ${dim('(this could take a while...)')}`)
       // actions report
       const csv = stringify(
         actions.map(i => {
-          const csvData = [i.owner, i.repo, i.name, i.workflow, i.state, i.created_at, i.updated_at, i.last_run_at]
+          const csvData = [
+            i.owner,
+            i.repo,
+            i.name,
+            i.workflow,
+            i.state || 'workflows not enabled in fork',
+            i.created_at,
+            i.updated_at,
+            i.last_run_at,
+          ]
 
           if (getListeners && i.listeners) csvData.push(i.listeners.join(', '))
           if (getPermissions && i.permissions) csvData.push(i.permissions.join(', '))
@@ -877,7 +886,7 @@ ${dim('(this could take a while...)')}`)
           repo: i.repo,
           name: i.name,
           workflow: i.workflow,
-          state: i.state,
+          state: i.state || 'workflows not enabled in fork',
           created_at: i.created_at,
           updated_at: i.updated_at,
           last_run_at: i.last_run_at,
@@ -993,8 +1002,10 @@ ${dim('(this could take a while...)')}`)
         uses,
         vars,
       } of actions) {
-        const workflowLink = `https://${hostname}/${owner}/${repo}/blob/HEAD/${workflow}`
-        let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${state} | ${created_at} | ${updated_at} | ${last_run_at}`
+        const workflowLink = `https://${hostname || 'github.com'}/${owner}/${repo}/blob/HEAD/${workflow}`
+        let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${
+          state || 'workflows not enabled in fork'
+        } | ${created_at} | ${updated_at} | ${last_run_at}`
 
         if (getListeners) {
           mdStr += ` | ${
@@ -1032,16 +1043,27 @@ ${dim('(this could take a while...)')}`)
 
           const usesLinks = []
           for await (const action of uses) {
-            if (action && action.indexOf('./') === -1) {
-              const [a, v] = action.split('@')
-              const [o, r] = a.split('/')
-              let url = `https://github.com/${o}/${r}`
+            if (action) {
+              let a
+              let v
+              let url
+              if (action.startsWith('./')) {
+                // Handle local actions
+                a = action
+                v = 'local'
+                url = `https://github.com/${owner}/${repo}/blob/HEAD/${a}`
+              } else {
+                // Handle actions from GitHub
+                ;[a, v] = action.split('@')
+                const [o, r] = a.split('/')
+                url = `https://github.com/${o}/${r}`
 
-              if (hostname) {
-                url = await checkURL(hostname, o, r, checkedURLs)
+                if (hostname) {
+                  url = await checkURL(hostname, o, r, checkedURLs)
+                }
               }
 
-              usesLinks.push(`[${o}/${r}](${url}) (\`${v}\`)`)
+              usesLinks.push(`[${a}](${url}) (\`${v}\`)`)
             }
           }
 
