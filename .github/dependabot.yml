@@ -5,7 +5,7 @@ updates:
     schedule:
       interval: 'monthly'
     groups:
-      all-dependencies:
+      actions:
         patterns:
           - '*'
     commit-message:
@@ -23,5 +23,18 @@ updates:
           - '*'
     commit-message:
       prefix: '⬆️ npm'
+    labels:
+      - 'dependency :robot:'
+
+  - package-ecosystem: 'docker'
+    directory: '/.devcontainer'
+    schedule:
+      interval: 'monthly'
+    groups:
+      docker:
+        patterns:
+          - '*'
+    commit-message:
+      prefix: '⬆️ docker'
     labels:
       - 'dependency :robot:'
