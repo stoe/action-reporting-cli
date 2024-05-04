@@ -799,8 +799,8 @@ ${dim('(this could take a while...)')}`)
       if (getPermissions) header.push('permissions')
       if (getRunsOn) header.push('runs-on')
       if (getSecrets) header.push('secrets')
-      if (getUses) header.push('uses')
       if (getVars) header.push('vars')
+      if (getUses) header.push('uses')
 
       // actions report
       const csv = stringify(
@@ -820,8 +820,8 @@ ${dim('(this could take a while...)')}`)
           if (getPermissions && i.permissions) csvData.push(i.permissions.join(', '))
           if (getRunsOn && i.runsOn) csvData.push(i.runsOn.join(', '))
           if (getSecrets && i.secrets) csvData.push(i.secrets.join(', '))
-          if (getUses && i.uses) csvData.push(i.uses.join(', '))
           if (getVars && i.vars) csvData.push(i.vars.join(', '))
+          if (getUses && i.uses) csvData.push(i.uses.join(', '))
 
           return csvData
         }),
@@ -896,8 +896,8 @@ ${dim('(this could take a while...)')}`)
         if (getPermissions) jsonData.permissions = i.permissions
         if (getRunsOn) jsonData.runsOn = i.runsOn
         if (getSecrets) jsonData.secrets = i.secrets
-        if (getUses) jsonData.uses = i.uses
         if (getVars) jsonData.vars = i.vars
+        if (getUses) jsonData.uses = i.uses
 
         return jsonData
       })
@@ -975,13 +975,13 @@ ${dim('(this could take a while...)')}`)
         headerBreak += ' | ---'
       }
 
-      if (getUses) {
-        header += ' | uses'
+      if (getVars) {
+        header += ' | vars'
         headerBreak += ' | ---'
       }
 
-      if (getVars) {
-        header += ' | vars'
+      if (getUses) {
+        header += ' | uses'
         headerBreak += ' | ---'
       }
 
@@ -1034,6 +1034,10 @@ ${dim('(this could take a while...)')}`)
           mdStr += ` | ${secrets && secrets.length > 0 ? `<ul><li>\`${secrets.join(`\`</li><li>\``)}\`</li></ul>` : ''}`
         }
 
+        if (getVars) {
+          mdStr += ` | ${vars && vars.length > 0 ? `<ul><li>\`${vars.join(`\`</li><li>\``)}\`</li></ul>` : ''}`
+        }
+
         if (getUses && uses) {
           // skip if not iterable
           if (uses === null || uses === undefined || typeof uses[Symbol.iterator] !== 'function') {
@@ -1068,10 +1072,6 @@ ${dim('(this could take a while...)')}`)
           }
 
           mdStr += ` | ${usesLinks.length > 0 ? `<ul><li>${usesLinks.join('</li><li>')}</li></ul>` : ''}`
-        }
-
-        if (getVars) {
-          mdStr += ` | ${vars && vars.length > 0 ? `<ul><li>\`${vars.join(`\`</li><li>\``)}\`</li></ul>` : ''}`
         }
 
         mdData.push(mdStr)
