@@ -34,6 +34,10 @@
     "license",
     "readme.md"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "format": "npx prettier --config-precedence prefer-file --write . && eslint . --fix",
     "prepare": "husky",
