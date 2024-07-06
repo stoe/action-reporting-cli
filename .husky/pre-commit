@@ -4,6 +4,5 @@
 
 . "$(dirname "$0")/_/husky.sh"
 
-npm run format
-
-npm run test
+npx lint-staged --verbose --allow-empty
+echo ""

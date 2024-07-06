@@ -35,9 +35,9 @@
     "readme.md"
   ],
   "scripts": {
-    "prepare": "husky install ./.github/husky",
     "format": "npx prettier --config-precedence prefer-file --write . && eslint . --fix",
     "pretest": "npx eslint-config-prettier .eslintrc.json",
+    "prepare": "husky",
     "test": "eslint ."
   },
   "dependencies": {
@@ -57,13 +57,20 @@
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-github": "^5.0.1",
-    "husky": "^9.0.11"
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.7",
   },
   "husky": {
     "hooks": {
-      "pre-commit": "./.github/husky/pre-commit",
-      "pre-push": "./.github/husky/pre-push"
+      "pre-commit": ".husky/pre-commit",
+      "pre-push": ".husky/pre-push"
     }
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "npm run format",
+      "npm run test"
+    ]
   },
   "prettier": "@github/prettier-config"
 }
