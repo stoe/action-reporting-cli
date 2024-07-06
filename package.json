@@ -13,8 +13,8 @@
     "email": "stefan@github.com",
     "url": "https://github.com/stoe"
   },
-  "license": "MIT",
   "repository": "github:stoe/action-reporting-cli",
+  "license": "MIT",
   "engines": {
     "node": ">=20",
     "npm": ">=10"
