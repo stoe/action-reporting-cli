@@ -42,11 +42,11 @@
   },
   "dependencies": {
     "@octokit/core": "^6.1.2",
-    "@octokit/plugin-paginate-rest": "^11.3.0",
+    "@octokit/plugin-paginate-rest": "^11.3.3",
     "@octokit/plugin-throttling": "^9.3.0",
     "chalk": "^4.1.2, <6",
-    "csv": "^6.3.8",
-    "got": "^14.2.1",
+    "csv": "^6.3.9",
+    "got": "^14.4.1",
     "js-yaml": "^4.1.0",
     "meow": "^13.2.0",
     "normalize-url": "^8.0.1"
