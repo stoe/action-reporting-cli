@@ -23,7 +23,7 @@ const cli = meow(
     ${yellow(`--repository`)}, ${yellow(`-r`)}  GitHub repository name with owner ${dim('(e.g. owner/repo)')}.
 
   ${bold('Additional options')}
-    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) $w{dim('(default GITHUB_TOKEN)')}.
+    ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
     ${yellow(`--hostname`)}        GitHub Enterprise Server ${bold('hostname')} ${dim('(default api.github.com)')}.
                       ${dim(`For example: ${yellow('github.example.com')}`)}
 
