@@ -39,10 +39,10 @@
     "provenance": true
   },
   "scripts": {
-    "format": "npx prettier --config-precedence prefer-file --write . && eslint . --fix",
+    "format": "npx prettier --config-precedence prefer-file --write . && eslint -c eslint.config.js . --fix",
     "prepare": "husky",
     "pretest": "npx eslint-config-prettier eslint.config.js",
-    "test": "eslint ."
+    "test": "eslint -c eslint.config.js ."
   },
   "dependencies": {
     "@octokit/core": "^6.1.2",

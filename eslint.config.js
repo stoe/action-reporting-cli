@@ -8,7 +8,7 @@ export default [
   prettierPluginRecommended,
   {
     files: ['*.js'],
-    ignores: ['build/', 'cache/', 'coverage/', 'dist/', 'node_modules/'],
+    ignores: ['build/', 'cache/', 'coverage/', 'dist/', 'node_modules/', 'reports/'],
     languageOptions: {
       globals: {
         ...globals.node,
