@@ -13,14 +13,17 @@
     "email": "stefan@github.com",
     "url": "https://github.com/stoe"
   },
-  "repository": "github:stoe/action-reporting-cli",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stoe/action-reporting-cli.git"
+  },
   "license": "MIT",
   "engines": {
     "node": ">=20",
     "npm": ">=10"
   },
   "bin": {
-    "action-reporting-cli": "./index.js"
+    "action-reporting-cli": "index.js"
   },
   "exports": {
     ".": "./utils/reporting.js",
