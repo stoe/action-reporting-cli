@@ -1020,12 +1020,14 @@ ${dim('(this could take a while...)')}`)
         }
 
         if (getRunsOn) {
-          const v = runsOn.map(ro => {
-            if (ro && ro.indexOf('matrix') > -1) {
-              ro = `\`${ro}\``
-            }
-            return ro
-          })
+          const v = runsOn
+            ? runsOn.map(ro => {
+                if (ro && ro.indexOf('matrix') > -1) {
+                  ro = `\`${ro}\``
+                }
+                return ro
+              })
+            : []
 
           mdStr += ` | ${v && v.length > 0 ? v.join(', ') : ''}`
         }
