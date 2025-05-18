@@ -1,6 +1,6 @@
 {
   "name": "@stoe/action-reporting-cli",
-  "version": "3.6.3",
+  "version": "4.0.0-alpha.0",
   "type": "module",
   "description": "CLI to report on GitHub Actions",
   "keywords": [
@@ -20,17 +20,21 @@
     "npm": ">=10"
   },
   "bin": {
-    "action-reporting-cli": "./index.js"
+    "action-reporting-cli": "./cli.js"
   },
   "exports": {
-    ".": "./utils/reporting.js",
-    "./utils": "./utils/reporting.js",
-    "./utils/*": "./utils/*.js",
+    ".": "./src/report/report.js",
+    "./report": "./src/report/report.js",
+    "./report/*": "./src/report/*.js",
+    "./github": "./src/github/base.js",
+    "./github/*": "./src/github/*.js",
+    "./util": "./src/util/log.js",
+    "./util/*": "./src/util/*.js",
     "./package.json": "./package.json"
   },
   "files": [
-    "utils/",
-    "index.js",
+    "src/",
+    "cli.js",
     "license",
     "readme.md"
   ],
@@ -41,30 +45,35 @@
   "scripts": {
     "format": "npx prettier --config-precedence prefer-file --write . && eslint -c eslint.config.js . --fix",
     "prepare": "husky",
-    "pretest": "npx eslint-config-prettier eslint.config.js",
-    "test": "eslint -c eslint.config.js ."
+    "pretest": "eslint -c eslint.config.js .",
+    "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:watch": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
   },
   "dependencies": {
-    "@octokit/core": "^6.1.4",
-    "@octokit/plugin-paginate-rest": "^12.0.0",
-    "@octokit/plugin-throttling": "^10.0.0",
+    "@octokit/core": "^7.0.2",
+    "@octokit/plugin-paginate-rest": "^13.0.1",
+    "@octokit/plugin-throttling": "^11.0.1",
     "chalk": "^4.1.2, <6",
     "csv": "^6.3.11",
-    "got": "^14.4.6",
+    "got": "^14.4.7",
     "js-yaml": "^4.1.0",
     "meow": "^13.2.0",
-    "normalize-url": "^8.0.1"
+    "normalize-url": "^8.0.1",
+    "ora": "^8.2.0",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@github/prettier-config": "^0.0.6",
-    "eslint": "^9.23.0",
-    "eslint-config-prettier": "^10.1.1",
+    "eslint": "^9.28.0",
+    "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-markdown": "^5.1.0",
-    "eslint-plugin-prettier": "^5.2.5",
-    "globals": "^16.0.0",
+    "eslint-plugin-prettier": "^5.4.1",
+    "globals": "^16.2.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.5.0",
-    "prettier": "^3.5.3"
+    "jest": "^29.7.0",
+    "lint-staged": "^16.1.0",
+    "prettier": "^3.5.3",
+    "sinon": "^20.0.0"
   },
   "husky": {
     "hooks": {
@@ -78,7 +87,7 @@
       "npm run test"
     ],
     "*.{json,md}": [
-      "prettier --write"
+      "npm run format"
     ]
   },
   "prettier": "@github/prettier-config"
