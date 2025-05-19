@@ -9,6 +9,8 @@ import {throttling} from '@octokit/plugin-throttling'
 import wait from './wait.js'
 import {writeFileSync} from 'fs'
 
+import Worflow from '../lib/workflow.js'
+
 const {blue, dim, red, yellow} = chalk
 const MyOctokit = Octokit.defaults({
   headers: {
@@ -160,6 +162,8 @@ const REPO_QUERY = `query ($owner: String!, $name: String!) {
   }
 }`
 
+let reposCount = 0
+
 /**
  * @async
  * @private
@@ -201,6 +205,7 @@ const findActions = async (
     let repos = []
     let pi = null
 
+    // if we have an owner, get the workflows for all repositories for that owner
     if (owner !== null && repo === null) {
       const {
         repositoryOwner: {
@@ -209,13 +214,16 @@ const findActions = async (
       } = await octokit.graphql(WORKFLOWS_QUERY, {owner, cursor})
 
       repos = nodes
+      reposCount += repos.length
       pi = pageInfo
     }
 
+    // if we have a repo, get the workflows for that repo
     if (owner !== null && repo !== null) {
       const {repository} = await octokit.graphql(REPO_QUERY, {owner, name: repo})
 
       repos = [repository]
+      reposCount += repos.length
     }
 
     for (const r of repos) {
@@ -227,10 +235,17 @@ const findActions = async (
       } = r
 
       // // skip archived or forked repositories
-      // if (archived || fork) continue
+      // if (archived || fork) {
+      //   archived && console.log(`skipping archived ${owner}/${repo}`)
+      //   fork && console.log(`skipping forked ${owner}/${repo}`)
+      //   continue
+      // }
 
       // skip if we don't have content
-      if (!workflows?.entries) continue
+      if (!workflows?.entries) {
+        console.log(`skipping ${owner}/${repo} without workflows`)
+        continue
+      }
 
       // https://docs.github.com/en/rest/actions/workflows#list-repository-workflows
       // we're doubling down here with this request to get additional details
@@ -273,56 +288,21 @@ const findActions = async (
         // skip if not .yml or .yaml
         if (!['.yml', '.yaml'].includes(wf.extension)) continue
 
-        const info = {owner, repo: name, workflow: wf.path}
+        const _wf = new Worflow(owner, repo, wf, {
+          getListeners,
+          getPermissions,
+          getRunsOn,
+          getSecrets,
+          getUses,
+          isExcluded,
+          getVars,
+        })
 
-        const content = wf.object?.text
-
-        if (content) {
-          try {
-            const yaml = load(content, 'utf8')
-
-            if (getListeners) {
-              info.listeners = findObject('on', yaml)
-            }
-
-            if (getPermissions) {
-              info.permissions = findObject('permissions', yaml)
-            }
-
-            if (getRunsOn) {
-              info.runsOn = findRunsOn(yaml)
-            }
-
-            if (getSecrets) {
-              info.secrets = findSecrets(content)
-            }
-
-            if (getUses) {
-              info.uses = findUses(content, isExcluded)
-            }
-
-            if (getVars) {
-              info.vars = findVars(content)
-            }
-          } catch (err) {
-            console.warn(red(`malformed yml: https://github.com/${owner}/${name}/blob/HEAD/${wf.path}`))
-          }
-        }
-
-        for (const {node_id: id, name: n, state, path, created_at, updated_at, last_run_at} of d) {
-          if (path === wf.path) {
-            info.id = id
-            info.name = n
-            info.state = state
-            info.created_at = new Date(created_at).toISOString()
-            info.updated_at = new Date(updated_at).toISOString()
-            info.last_run_at = last_run_at ? new Date(last_run_at).toISOString() : ''
-          }
-        }
-
-        records.push(info)
+        records.push(_wf.get())
       }
     }
+
+    console.log(reposCount, records.length)
 
     if (pi && pi.hasNextPage) {
       // wait additional 1s between pagination requests
@@ -332,206 +312,8 @@ const findActions = async (
     }
   } catch (err) {
     // do nothing
+    console.error(err)
   }
-}
-
-/**
- * @private
- * @function findObject
- *
- * @param {string}  key
- * @param {object}  search
- * @param {any[]}   [results=[]]
- *
- * @returns {any[]}
- */
-const findObject = (key, search, results = []) => {
-  const res = results
-
-  for (const k in search) {
-    const value = search[k]
-
-    if (k !== key && typeof value === 'object') {
-      findObject(key, value, res)
-    }
-
-    if (k === key && typeof value === 'object') {
-      for (const i in value) {
-        let v = ''
-
-        switch (key) {
-          case 'on':
-            if (!value[i]) {
-              v = i
-            } else {
-              v = `${i}: ${JSON.stringify(value[i])}`.replace(/"/g, '')
-            }
-            break
-          case 'permissions':
-            v = `${i}: ${value[i]}`
-            break
-          default:
-            break
-        }
-
-        if (!res.includes(v)) res.push(v)
-      }
-    }
-
-    if (k === key && typeof value === 'string') {
-      if (!res.includes(value)) res.push(value)
-    }
-  }
-
-  return res
-}
-
-/**
- * @private
- * @function findRunsOn
- *
- * @param {object}  search
- * @param {any[]}   [results=[]]
- *
- * @returns {any[]}
- */
-const findRunsOn = (search, results = []) => {
-  const key = 'runs-on'
-  const res = results
-
-  for (const k in search) {
-    const value = search[k]
-
-    if (k !== key && typeof value === 'object') {
-      findRunsOn(value, res)
-    }
-
-    if (k === key && typeof value === 'object') {
-      for (const i in value) {
-        const v = value[i]
-
-        if (!res.includes(v)) res.push(v)
-      }
-    }
-
-    if (k === key && typeof value === 'string') {
-      if (!res.includes(value)) res.push(value)
-    }
-  }
-
-  return res
-}
-
-const secretsRegex = /\$\{\{\s?secrets\.(.*)\s?\}\}/g
-/**
- * @private
- * @function findSecrets
- *
- * @param {string}  text
- *
- * @returns {string[]}
- */
-const findSecrets = text => {
-  const secrets = []
-  const matchSecrets = [...text.matchAll(secretsRegex)]
-
-  matchSecrets.map(m => {
-    const v = m[1].trim()
-
-    if (!secrets.includes(v)) secrets.push(v)
-  })
-
-  return secrets
-}
-
-const usesRegex = /([^\s+]|[^\t+])uses: (.*)/g
-/**
- * @private
- * @function findUses
- *
- * @param {string}  text
- * @param {boolean} isExcluded
- *
- * @returns {string[]}
- */
-const findUses = (text, isExcluded) => {
-  const uses = []
-  const matchUses = [...text.matchAll(usesRegex)]
-
-  matchUses.map(m => {
-    let u = m[2].trim()
-    if (u.indexOf('/') < 0 && u.indexOf('.') < 0) return
-
-    // exclude actions created by GitHub (owner: actions||github)
-    if ((isExcluded && u.startsWith('actions/')) || u.startsWith('github/')) return
-
-    // strip '|" from uses
-    u = u.replace(/('|")/g, '').trim()
-
-    // remove comments from uses
-    u = u.split(/ #.*$/)[0].trim()
-
-    if (!uses.includes(u)) uses.push(u)
-  })
-
-  return uses
-}
-
-/**
- * @private
- * @function getUnique
- *
- * @param {Action[]}  actions
- *
- * @returns {string[]|null}
- */
-const getUnique = actions => {
-  const _unique = []
-  let unique = []
-
-  actions.map(({uses}) => {
-    if (uses && uses.length > 0) _unique.push(...uses)
-  })
-
-  unique = [...new Set(_unique)].sort((a, b) => {
-    // Use toUpperCase() to ignore character casing
-    const A = a.toUpperCase()
-    const B = b.toUpperCase()
-
-    let comparison = 0
-
-    if (A > B) {
-      comparison = 1
-    } else if (A < B) {
-      comparison = -1
-    }
-
-    return comparison
-  })
-
-  return unique
-}
-
-const varsRegex = /\$\{\{\s?vars\.(.*)\s?\}\}/g
-/**
- * @private
- * @function findVars
- *
- * @param {string}  text
- *
- * @returns {string[]}
- */
-const findVars = text => {
-  const vars = []
-  const matchVars = [...text.matchAll(varsRegex)]
-
-  matchVars.map(m => {
-    const v = m[1].trim()
-
-    if (!vars.includes(v)) vars.push(v)
-  })
-
-  return vars
 }
 
 /**
@@ -765,9 +547,9 @@ ${dim('(this could take a while...)')}`)
 
     this.actions = actions
 
-    if (getUses && isUnique !== false) {
-      this.unique = getUnique(actions)
-    }
+    // if (getUses && isUnique !== false) {
+    //   this.unique = getUnique(actions)
+    // }
 
     return actions
   }
@@ -1004,7 +786,7 @@ ${dim('(this could take a while...)')}`)
       } of actions) {
         const workflowLink = `https://${hostname || 'github.com'}/${owner}/${repo}/blob/HEAD/${workflow}`
         let mdStr = `${owner} | ${repo} | ${name} | [${workflow}](${workflowLink}) | ${
-          state || 'workflows not enabled in fork'
+          state || 'n/a'
         } | ${created_at} | ${updated_at} | ${last_run_at}`
 
         if (getListeners) {
@@ -1020,12 +802,14 @@ ${dim('(this could take a while...)')}`)
         }
 
         if (getRunsOn) {
-          const v = runsOn.map(ro => {
-            if (ro && ro.indexOf('matrix') > -1) {
-              ro = `\`${ro}\``
-            }
-            return ro
-          })
+          const v = runsOn
+            ? runsOn.map(ro => {
+                if (ro && ro.indexOf('matrix') > -1) {
+                  ro = `\`${ro}\``
+                }
+                return ro
+              })
+            : []
 
           mdStr += ` | ${v && v.length > 0 ? v.join(', ') : ''}`
         }
