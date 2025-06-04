@@ -16,7 +16,7 @@ import Markdown from './markdown.js'
 // Utilities
 import wait from '../util/wait.js'
 
-const {blue, cyan, dim, green, red} = chalk
+const {blue, bold, cyan, dim, green, red} = chalk
 
 /**
  * Base class for generating various types of reports.
@@ -918,7 +918,7 @@ export default class Report {
 
         // Exclude actions created by GitHub (owner: actions||github)
         if (this.#options.exclude && (usesValue.startsWith('actions/') || usesValue.startsWith('github/'))) {
-          this.#logger.debug(`Excluding uses value created by GitHub: ${usesValue}`)
+          this.#logger.warn(`Excluding ${bold(usesValue)} created by GitHub.`)
           continue
         }
 

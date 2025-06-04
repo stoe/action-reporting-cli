@@ -258,6 +258,8 @@ export class Log {
    * @param {...any} args - Additional arguments to log
    */
   warn(msg, ...args) {
+    // Skip warning logging when not in debug mode for better performance
+    if (!this.#isDebug) return
     this.#logWithPrefix(console.warn, msg, ...args)
   }
 

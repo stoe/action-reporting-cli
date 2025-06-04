@@ -112,7 +112,8 @@ class Cache {
 
       return true
     } catch {
-      this.#logger.debug(`Cache file does not exist at ${this.#path}`)
+      this.#logger.warn(`Cache file does not exist at ${this.#path}`)
+
       return false
     }
   }
