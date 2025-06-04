@@ -40,6 +40,8 @@ export default class Repository extends Base {
    * @param {string|null} [options.token=null] - GitHub personal access token
    * @param {string|null} [options.hostname=null] - GitHub hostname for Enterprise servers
    * @param {boolean} [options.debug=false] - Enable debug mode
+   * @param {boolean} [options.archived=false] - Skip archived repositories
+   * @param {boolean} [options.forked=false] - Skip forked repositories
    * @throws {Error} Throws an error if the repository name format is invalid
    */
   constructor(
@@ -48,6 +50,8 @@ export default class Repository extends Base {
       token: null,
       hostname: null,
       debug: false,
+      archived: false,
+      forked: false,
     },
   ) {
     super(options)

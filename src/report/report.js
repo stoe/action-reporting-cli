@@ -114,18 +114,19 @@ export default class Report {
    */
   #validateInput(flags) {
     const {
-      token,
-      // hostname,
       enterprise,
       owner,
       repository,
+      token,
+      hostname,
       all,
-      exclude,
       unique: _unique,
       csv,
       json,
       md,
       skipCache,
+      archived,
+      forked,
     } = flags
 
     // Ensure GitHub token is provided
@@ -160,10 +161,12 @@ export default class Report {
     const uniqueFlag = _unique === 'both' ? 'both' : _unique === 'true'
 
     this.#options = {
-      skipCache,
+      hostname,
       all,
       ...this.#processReportOptions(flags, uniqueFlag),
-      exclude: exclude,
+      skipCache,
+      archived,
+      forked,
     }
 
     this.#output = {
@@ -187,7 +190,7 @@ export default class Report {
    * @returns {object} Processed report configuration with all report options
    */
   #processReportOptions(flags, uniqueFlag) {
-    let {hostname, listeners, permissions, runsOn, secrets, uses, vars, all} = flags
+    let {listeners, permissions, runsOn, secrets, vars, uses, all, exclude} = flags
     let processedUniqueFlag = uniqueFlag
 
     // When --all flag is specified, enable all report types
@@ -208,10 +211,10 @@ export default class Report {
       permissions,
       runsOn,
       secrets,
-      uses,
       vars,
+      uses,
+      exclude,
       uniqueFlag: processedUniqueFlag,
-      hostname,
     }
 
     this.#options = result
@@ -310,11 +313,13 @@ export default class Report {
    *   Enterprise data with organization and repository counts
    * @throws {Error} When enterprise loading fails or API requests fail
    */
-  async processEnterprise(enterpriseName, token, hostname, debug) {
+  async processEnterprise(enterpriseName, token, hostname, debug, archived, forked) {
     const enterprise = new Enterprise(enterpriseName, {
       token,
       hostname,
       debug,
+      archived,
+      forked,
     })
 
     this.#logger.start(`Loading enterprise ${cyan(enterpriseName)}...`)
@@ -330,6 +335,35 @@ export default class Report {
 
     if (isCached) {
       result = data
+
+      // Filter organizations and repositories based on archived and forked flags
+      organizations = result.organizations.map(org => {
+        // Filter repositories in each organization
+        const filteredRepos = org.repositories.filter(repo => {
+          // Skip repository if it's archived and we're excluding archived repos
+          if (archived && repo.isArchived) {
+            this.#logger.warn(`Skipping archived repository ${repo.nwo}`)
+            return false
+          }
+
+          // Skip repository if it's forked and we're excluding forked repos
+          if (forked && repo.isFork) {
+            this.#logger.warn(`Skipping forked repository ${repo.nwo}`)
+            return false
+          }
+
+          return true
+        })
+
+        // Return organization with filtered repositories
+        return {
+          ...org,
+          repositories: filteredRepos,
+        }
+      })
+
+      // Update repositories count
+      reposCount = organizations.reduce((count, org) => count + org.repositories.length, 0)
     } else {
       // Brief delay to ensure spinner is visible
       await wait(500)
@@ -395,8 +429,8 @@ export default class Report {
    * @returns {Promise<{owner: Owner, repositories: number}>} Owner data with repository count
    * @throws {Error} When owner loading fails or API requests fail
    */
-  async processOwner(ownerName, token, hostname, debug) {
-    const ownerInstance = new Owner(ownerName, {token, hostname, debug})
+  async processOwner(ownerName, token, hostname, debug, archived, forked) {
+    const ownerInstance = new Owner(ownerName, {token, hostname, debug, archived, forked})
     const owner = await ownerInstance.getUser(ownerName)
 
     this.#logger.start(`Loading ${owner.type} ${cyan(ownerName)}...`)
@@ -406,7 +440,22 @@ export default class Report {
 
     if (isCached) {
       // If cached, use existing data
-      repositories = data.repositories
+      // Filter repositories based on archived and forked flags
+      repositories = data.repositories.filter(repo => {
+        // Skip repository if it's archived and we're excluding archived repos
+        if (archived && repo.isArchived) {
+          this.#logger.warn(`Skipping archived repository ${repo.nwo}`)
+          return false
+        }
+
+        // Skip repository if it's forked and we're excluding forked repos
+        if (forked && repo.isFork) {
+          this.#logger.warn(`Skipping forked repository ${repo.nwo}`)
+          return false
+        }
+
+        return true
+      })
     } else {
       // Brief delay to ensure spinner is visible
       await wait(500)
@@ -455,8 +504,8 @@ export default class Report {
    * @returns {Promise<{repository: Repository}>} Repository data for processing
    * @throws {Error} When repository loading fails or API requests fail
    */
-  async processRepository(repoName, token, hostname, debug) {
-    const repo = new Repository(repoName, {token, hostname, debug})
+  async processRepository(repoName, token, hostname, debug, archived, forked) {
+    const repo = new Repository(repoName, {token, hostname, debug, archived, forked})
 
     this.#logger.start(`Loading repository ${cyan(repoName)}...`)
 

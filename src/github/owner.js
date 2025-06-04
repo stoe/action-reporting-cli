@@ -30,6 +30,8 @@ export default class Owner extends Base {
    * @param {string|null} [options.token=null] - GitHub personal access token
    * @param {string|null} [options.hostname=null] - GitHub hostname for Enterprise servers
    * @param {boolean} [options.debug=false] - Enable debug mode
+   * @param {boolean} [options.archived=false] - Skip archived repositories
+   * @param {boolean} [options.forked=false] - Skip forked repositories
    */
   constructor(
     name,
@@ -37,6 +39,8 @@ export default class Owner extends Base {
       token: null,
       hostname: null,
       debug: false,
+      archived: false,
+      forked: false,
     },
   ) {
     super(options)
@@ -202,12 +206,15 @@ export default class Owner extends Base {
    * @returns {Promise<Array>} Array of repository objects
    */
   async getRepositories(login, cursor = null) {
+    const query = this.getRepositoryQuery()
+    this.logger.debug(`Fetching repositories for user ${login}${cursor ? ` with cursor ${cursor}` : ''}`)
+
     const {
       repositoryOwner: {
         repositories: {nodes, pageInfo},
       },
     } = await this.octokit.graphql(
-      REPOSITORY_QUERY,
+      query,
       {
         user: login,
         cursor,
@@ -250,15 +257,22 @@ export default class Owner extends Base {
 
     return this.#repositories
   }
-}
 
-const REPOSITORY_QUERY = `query ($user: String!, $cursor: String = null) {
+  getRepositoryQuery() {
+    const {archived, forked} = this.#options
+
+    archived && this.logger.warn('Skipping archived repositories.')
+    forked && this.logger.warn('Skipping forked repositories.')
+
+    return `query ($user: String!, $cursor: String = null) {
   repositoryOwner(login: $user) {
     repositories(
-      first: 100
+      first: 50
       after: $cursor
       orderBy: { field: UPDATED_AT, direction: DESC }
       ownerAffiliations: OWNER
+      ${archived ? 'isArchived: false' : ''}
+      ${forked ? 'isFork: false' : ''}
     ) {
       pageInfo {
         hasNextPage
@@ -282,3 +296,5 @@ const REPOSITORY_QUERY = `query ($user: String!, $cursor: String = null) {
     }
   }
 }`
+  }
+}

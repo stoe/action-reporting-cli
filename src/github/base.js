@@ -13,16 +13,24 @@ export default class Base {
   #logger
   #octokit
 
+  #archived = false
+  #forked = false
+
   /**
    * Creates a new Base instance with logging and GitHub API client.
    * @param {object} options - Configuration options for the base class
    * @param {string|null} [options.token=null] - GitHub personal access token for authentication
    * @param {string|null} [options.hostname=null] - GitHub hostname for Enterprise servers
    * @param {boolean} [options.debug=false] - Enable debug logging
+   * @param {boolean} [options.archived=false] - Skip archived repositories
+   * @param {boolean} [options.forked=false] - Skip forked repositories
    * @throws {Error} Throws an error if Octokit initialization fails
    */
-  constructor({token = null, hostname = null, debug = false} = {}) {
+  constructor({token = null, hostname = null, debug = false, archived = false, forked = false} = {}) {
     this.#logger = log(debug)
+
+    this.#archived = archived
+    this.#forked = forked
 
     try {
       this.#octokit = getOctokit(token, hostname, debug)
@@ -54,5 +62,21 @@ export default class Base {
    */
   get octokit() {
     return this.#octokit
+  }
+
+  /**
+   * Gets the archived repositories flag.
+   * @returns {boolean} True if archived repositories should be skipped, false otherwise
+   */
+  get archived() {
+    return this.#archived
+  }
+
+  /**
+   * Gets the forked repositories flag.
+   * @returns {boolean} True if forked repositories should be skipped, false otherwise
+   */
+  get forked() {
+    return this.#forked
   }
 }
