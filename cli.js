@@ -38,38 +38,35 @@ function createHelpText() {
       '(e.g. enterprise)',
     )}.
     ${yellow(`--owner`)}, ${yellow(`-o`)}       GitHub organization/user login ${dim('(e.g. owner)')}.
-                      ${dim(
-                        `If ${yellow(`--owner`)} is a user, results for the authenticated user (${yellow(
-                          `--token`,
-                        )}) will be returned.`,
-                      )}
+                        ${dim(
+                          `If ${yellow(`--owner`)} is a user, results for the authenticated user (${yellow(
+                            `--token`,
+                          )}) will be returned.`,
+                        )}
     ${yellow(`--repository`)}, ${yellow(`-r`)}  GitHub repository name with owner ${dim('(e.g. owner/repo)')}.
 
   ${bold('Additional options')}
     ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
     ${yellow(`--hostname`)}        GitHub Enterprise Server ${bold('hostname')} ${dim('(default api.github.com)')}.
-                      ${dim(`For example: ${yellow('github.example.com')}`)}
+                       ${dim(`For example: ${yellow('github.example.com')}`)}
 
   ${bold('Report options')}
-    ${yellow(`--all`)}             Report all below.
-
-    ${yellow(`--listeners`)}       Report ${bold('on')} listeners used.
-    ${yellow(`--permissions`)}     Report ${bold('permissions')} values for GITHUB_TOKEN.
-    ${yellow(`--runs-on`)}         Report ${bold('runs-on')} values.
-    ${yellow(`--secrets`)}         Report ${bold('secrets')} used.
-    ${yellow(`--uses`)}            Report ${bold('uses')} values.
-      ${yellow(`--exclude`)}         Exclude GitHub Actions created by GitHub.
-                        ${dim(
-                          `From https://github.com/actions and https://github.com/github organizations.
-                        Only applies to ${yellow(`--uses`)}.`,
-                        )}
-      ${yellow(`--unique`)}          List unique GitHub Actions.
+    ${yellow(`--all`)}             Report all below or individually:
+      ${yellow(`--listeners`)}     Report ${bold('on')} listeners used.
+      ${yellow(`--permissions`)}   Report ${bold('permissions')} values for GITHUB_TOKEN.
+      ${yellow(`--runs-on`)}       Report ${bold('runs-on')} values.
+      ${yellow(`--secrets`)}       Report ${bold('secrets')} used.
+      ${yellow(`--vars`)}          Report ${bold('vars')} used.
+      ${yellow(`--uses`)}          Report ${bold('uses')} values.
+        ${yellow(`--exclude`)}     Exclude GitHub Actions created by GitHub. ${dim(`(can be used with ${yellow('--all')})`)}
+                       ${dim(`From https://github.com/actions and https://github.com/github organizations.
+                        Only applies to ${yellow(`--uses`)}.`)}
+        ${yellow(`--unique`)}      List unique GitHub Actions.
                         ${dim(
                           `Possible values are ${yellow('true')}, ${yellow('false')} and ${yellow('both')}.
-                        Only applies to ${yellow(`--uses`)}.`,
+                        Will create an additional ${bold('*-unique.{csv,json,md}')} report file when not ${yellow('false')}.
+                        Resolves to ${yellow('both')} for ${yellow(`--all`)}.`,
                         )}
-                        ${dim(`Will create an additional ${bold('*-unique.{csv,json,md}')} report file.`)}
-    ${yellow(`--vars`)}            Report ${bold('vars')} used.
 
   ${bold('Output options')}
     ${yellow(`--csv`)}             Path to save CSV output ${dim('(e.g. /path/to/reports/report.csv)')}.
