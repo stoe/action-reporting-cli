@@ -199,6 +199,54 @@ const cli = meow(createHelpText(), {
 })
 
 /**
+ * Displays a structured status message showing what the CLI is scanning for and what options are enabled.
+ * @param {object} flags - The CLI flags object containing all user options
+ * @param {string} targetName - The name of the target (enterprise, owner, or repository)
+ * @param {string} [hostName] - Optional hostname for GitHub Enterprise Server
+ */
+const displayAnalysisSummary = (flags, targetName, hostName) => {
+  // Check if any report options are enabled
+  const {all, listeners, permissions, runsOn, secrets, vars, uses, exclude, unique, archived, forked} = flags
+
+  // Create readable list of enabled report types
+  const enabledReportTypes = []
+  if (all || listeners) enabledReportTypes.push('listeners')
+  if (all || permissions) enabledReportTypes.push('permissions')
+  if (all || runsOn) enabledReportTypes.push('runs-on')
+  if (all || secrets) enabledReportTypes.push('secrets')
+  if (all || vars) enabledReportTypes.push('vars')
+  if (all || uses) enabledReportTypes.push('uses')
+
+  // Create readable list of options
+  const options = []
+  if (all || uses) {
+    if (exclude) options.push('excluding actions created by GitHub')
+    const uniqueValue = all ? 'both' : unique
+    if (uniqueValue !== 'false') options.push(`unique report=${uniqueValue}`)
+  }
+  // Show repository filter information
+  if (archived) options.push('skip archived repos')
+  if (forked) options.push('skip forked repos')
+
+  // Create readable list of output formats
+  const outputs = []
+  if (flags.csv) outputs.push('csv')
+  if (flags.json) outputs.push('json')
+  if (flags.md) outputs.push('markdown')
+
+  // Build the structured message
+  console.log(
+    `Analyzing GitHub Actions in ${blue(targetName)}${hostName ? ` on ${blue(hostName)}` : ''}:
+${yellow('→')} scanning:\t${enabledReportTypes.map(type => yellow(type)).join(', ')}
+${yellow('→')} options:\t${options.length > 0 ? options.map(opt => yellow(opt)).join(', ') : 'none'}
+${yellow('→')} outputs:\t${outputs.length > 0 ? outputs.map(output => yellow(output)).join(', ') : 'none'}
+
+${dim('This can take a while...')}
+`,
+  )
+}
+
+/**
  * Main execution function that orchestrates the CLI application.
  * Handles input validation, option processing, and delegates to appropriate processing functions.
  * @async
@@ -208,7 +256,7 @@ const cli = meow(createHelpText(), {
 async function main() {
   console.log(`${bold('@stoe/action-reporting-cli')} ${dim(`v${cli.pkg.version}`)}\n`)
 
-  const {token, hostname, enterprise, owner, repository, archived, forked, debug, help, version} = cli.flags
+  const {token, hostname, enterprise, owner, repository, debug, archived, forked, help, version} = cli.flags
   const entity = enterprise || owner || repository
   const logger = log(entity, token, debug)
   const cache = cacheInstance(null, logger)
@@ -219,6 +267,10 @@ async function main() {
     if (version) cli.showVersion(0)
 
     const report = new Report(cli.flags, logger, cache)
+
+    // Display analysis summary
+    displayAnalysisSummary(cli.flags, enterprise || owner || repository, hostname)
+
     let results
 
     if (enterprise) {
