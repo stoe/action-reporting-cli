@@ -1,4 +1,4 @@
-import {Log} from '../../src/util/log.js'
+import {Log} from '../../../src/util/log.js'
 
 // Mock for src/util/log.js
 // This file mocks the logging functionality for testing

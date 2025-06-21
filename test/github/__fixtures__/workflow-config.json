@@ -1,0 +1,11 @@
+{
+  "name": "Test Workflow",
+  "path": ".github/workflows/test-workflow.yml",
+  "language": {
+    "name": "YAML"
+  },
+  "object": {
+    "text": "",
+    "isTruncated": false
+  }
+}

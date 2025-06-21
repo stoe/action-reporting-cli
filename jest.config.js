@@ -23,7 +23,12 @@ const config = {
   transform: {},
   verbose: true,
   moduleNameMapper: {
+    // Map mocks for different directories
+    '^@mocks/(.+)/(.*)$': '<rootDir>/test/$1/__mocks__/$2',
     '^@mocks/(.*)$': '<rootDir>/test/__mocks__/$1',
+    // Map fixtures for different directories
+    '^fixtures/(.+)/(.*)$': '<rootDir>/test/$1/__fixtures__/$2',
+    '^fixtures/(.*)$': '<rootDir>/test/__fixtures__/$1',
   },
 }
 

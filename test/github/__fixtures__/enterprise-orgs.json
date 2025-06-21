@@ -1,0 +1,24 @@
+[
+  {
+    "login": "test-org-1",
+    "id": 12345,
+    "node_id": "O_kgDOABCDEF",
+    "url": "https://api.github.com/orgs/test-org-1",
+    "repos_url": "https://api.github.com/orgs/test-org-1/repos",
+    "description": "Test Organization 1",
+    "name": "Test Organization 1",
+    "created_at": "2020-01-01T00:00:00Z",
+    "updated_at": "2021-01-01T00:00:00Z"
+  },
+  {
+    "login": "test-org-2",
+    "id": 67890,
+    "node_id": "O_kgDOGHIJKL",
+    "url": "https://api.github.com/orgs/test-org-2",
+    "repos_url": "https://api.github.com/orgs/test-org-2/repos",
+    "description": "Test Organization 2",
+    "name": "Test Organization 2",
+    "created_at": "2020-02-01T00:00:00Z",
+    "updated_at": "2021-02-01T00:00:00Z"
+  }
+]
