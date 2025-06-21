@@ -231,7 +231,7 @@ export default class MarkdownReporter extends Reporter {
    */
   createMarkdownLink(text, owner, repo, path = '') {
     // Don't create links for docker:/ URLs
-    if (text.startsWith('docker:/') || owner.startsWith('docker:/')) {
+    if (text.startsWith('docker://') || owner.startsWith('docker://')) {
       return `\`${text}\``
     }
 

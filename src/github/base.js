@@ -27,7 +27,7 @@ export default class Base {
    * @throws {Error} Throws an error if Octokit initialization fails
    */
   constructor({token = null, hostname = null, debug = false, archived = false, forked = false} = {}) {
-    this.#logger = log(debug)
+    this.#logger = log('Base', token, debug)
 
     this.#archived = archived
     this.#forked = forked

@@ -226,26 +226,28 @@ export default class Owner extends Base {
       },
     )
 
-    nodes.map(async data => {
-      this.spinner.text = `Loading repository ${cyan(data.nwo)}...`
+    await Promise.all(
+      nodes.map(async data => {
+        this.spinner.text = `Loading repository ${cyan(data.nwo)}...`
 
-      // Add repository to the list
-      this.#repositories.push({
-        nwo: data.nwo,
-        owner: data.owner.login,
-        name: data.name,
-        repo: {
+        // Add repository to the list
+        this.#repositories.push({
+          nwo: data.nwo,
           owner: data.owner.login,
           name: data.name,
-        },
-        id: data.id,
-        node_id: data.node_id,
-        visibility: data.visibility,
-        isArchived: data.isArchived,
-        isFork: data.isFork,
-        branch: data.defaultBranchRef?.name || undefined,
-      })
-    })
+          repo: {
+            owner: data.owner.login,
+            name: data.name,
+          },
+          id: data.id,
+          node_id: data.node_id,
+          visibility: data.visibility,
+          isArchived: data.isArchived,
+          isFork: data.isFork,
+          branch: data.defaultBranchRef?.name || undefined,
+        })
+      }),
+    )
 
     // Sleep for 1s to avoid hitting the rate limit
     await wait(1000)

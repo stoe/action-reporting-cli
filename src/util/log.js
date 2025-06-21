@@ -183,7 +183,7 @@ export class Log {
   logWithPrefix(consoleMethod, msg, ...args) {
     // Mask sensitive data once for both message and arguments
     const maskedMsg = this.maskSensitive(msg)
-    const maskedArgs = this.maskSensitive(...args)
+    const maskedArgs = args.map(arg => this.maskSensitive(arg))
 
     if (this.#isDebug && this.#logger) {
       // Use Winston for debug mode logging
