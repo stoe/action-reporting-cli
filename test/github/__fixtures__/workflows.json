@@ -1,0 +1,26 @@
+[
+  {
+    "id": 12345,
+    "node_id": "W_kgDOABCDEF",
+    "name": "CI",
+    "path": ".github/workflows/ci.yml",
+    "state": "active",
+    "created_at": "2021-01-01T00:00:00Z",
+    "updated_at": "2022-01-01T00:00:00Z",
+    "url": "https://api.github.com/repos/mona/sample-repo/actions/workflows/12345",
+    "html_url": "https://github.com/mona/sample-repo/actions/workflows/ci.yml",
+    "badge_url": "https://github.com/mona/sample-repo/actions/workflows/ci.yml/badge.svg"
+  },
+  {
+    "id": 67890,
+    "node_id": "W_kgDOGHIJKL",
+    "name": "Release",
+    "path": ".github/workflows/release.yml",
+    "state": "active",
+    "created_at": "2021-02-01T00:00:00Z",
+    "updated_at": "2022-02-01T00:00:00Z",
+    "url": "https://api.github.com/repos/mona/sample-repo/actions/workflows/67890",
+    "html_url": "https://github.com/mona/sample-repo/actions/workflows/release.yml",
+    "badge_url": "https://github.com/mona/sample-repo/actions/workflows/release.yml/badge.svg"
+  }
+]

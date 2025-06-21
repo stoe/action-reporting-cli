@@ -1,0 +1,80 @@
+[
+  {
+    "id": 1234567890,
+    "node_id": "R_kgDOGaM3cg",
+    "name": "sample-repo",
+    "full_name": "mona/sample-repo",
+    "private": false,
+    "owner": {
+      "login": "mona",
+      "id": 123456,
+      "type": "User"
+    },
+    "html_url": "https://github.com/mona/sample-repo",
+    "description": "Sample repository for testing",
+    "fork": false,
+    "url": "https://api.github.com/repos/mona/sample-repo",
+    "created_at": "2023-01-01T00:00:00Z",
+    "updated_at": "2023-01-02T00:00:00Z",
+    "pushed_at": "2023-01-03T00:00:00Z",
+    "clone_url": "https://github.com/mona/sample-repo.git",
+    "homepage": null,
+    "size": 123,
+    "stargazers_count": 5,
+    "watchers_count": 5,
+    "language": "JavaScript",
+    "has_issues": true,
+    "has_projects": true,
+    "has_downloads": true,
+    "has_wiki": true,
+    "has_pages": false,
+    "archived": false,
+    "disabled": false,
+    "visibility": "public",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit"
+    }
+  },
+  {
+    "id": 987654321,
+    "node_id": "R_kgDOGbN4dh",
+    "name": "archived-repo",
+    "full_name": "mona/archived-repo",
+    "private": false,
+    "owner": {
+      "login": "mona",
+      "id": 123456,
+      "type": "User"
+    },
+    "html_url": "https://github.com/mona/archived-repo",
+    "description": "Archived repository for testing",
+    "fork": false,
+    "url": "https://api.github.com/repos/mona/archived-repo",
+    "created_at": "2022-01-01T00:00:00Z",
+    "updated_at": "2022-01-02T00:00:00Z",
+    "pushed_at": "2022-01-03T00:00:00Z",
+    "clone_url": "https://github.com/mona/archived-repo.git",
+    "homepage": null,
+    "size": 456,
+    "stargazers_count": 2,
+    "watchers_count": 2,
+    "language": "JavaScript",
+    "has_issues": true,
+    "has_projects": true,
+    "has_downloads": true,
+    "has_wiki": true,
+    "has_pages": false,
+    "archived": true,
+    "disabled": false,
+    "visibility": "public",
+    "license": {
+      "key": "mit",
+      "name": "MIT License",
+      "spdx_id": "MIT",
+      "url": "https://api.github.com/licenses/mit"
+    }
+  }
+]

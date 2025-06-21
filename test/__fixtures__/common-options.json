@@ -1,0 +1,31 @@
+{
+  "workflow": {
+    "token": "test-token",
+    "debug": false
+  },
+  "repository": {
+    "token": "test-token",
+    "debug": false
+  },
+  "report": {
+    "listeners": true,
+    "permissions": true,
+    "runsOn": true,
+    "secrets": true,
+    "vars": true,
+    "uses": true,
+    "uniqueFlag": "both"
+  },
+  "csvReport": {
+    "listeners": true,
+    "permissions": true,
+    "runsOn": true,
+    "secrets": true,
+    "vars": true,
+    "uses": true,
+    "uniqueFlag": "both"
+  },
+  "reporter": {
+    "uniqueFlag": "both"
+  }
+}
