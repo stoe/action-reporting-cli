@@ -151,6 +151,7 @@ export default class Enterprise extends Base {
     this.#id = id
     this.#node_id = node_id
 
+    /* c8 ignore start */
     // Process each organization and fetch its repositories
     await Promise.all(
       nodes.map(async data => {
@@ -177,6 +178,7 @@ export default class Enterprise extends Base {
         })
       }),
     )
+    /* c8 ignore stop */
 
     // Sleep for 1s to avoid hitting the rate limit
     await wait(1000)

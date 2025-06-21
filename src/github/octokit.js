@@ -24,7 +24,8 @@ export default function getOctokit(token, hostname = null, debug = false) {
     throw new Error('GitHub token is required')
   }
 
-  const logger = log('octokit', token, debug)
+  // Create separate logger instance for Octokit
+  const logger = log('octokit', token, debug, true)
 
   // Normalize hostname for GitHub Enterprise servers
   if (hostname) {

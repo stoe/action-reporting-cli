@@ -28,18 +28,16 @@ export class Log {
     this.#spinner = this.#isDebug ? null : ora()
 
     if (this.#isDebug) {
-      this.#logger = this.#createWinstonLogger()
+      this.#logger = this.createWinstonLogger()
     }
   }
-
-  /* c8 ignore start */
 
   /**
    * Creates Winston logger configuration for debug mode.
    * @returns {winston.Logger} Configured Winston logger instance
    * @private
    */
-  #createWinstonLogger() {
+  createWinstonLogger() {
     // Common format for timestamp and message formatting
     const commonFormat = winston.format.printf(({timestamp, level, message, ...meta}) => {
       const metaStr = Object.keys(meta).length ? ` ${JSON.stringify(meta, null, 2)}` : ''
@@ -72,7 +70,7 @@ export class Log {
         }),
         new winston.transports.File({
           level: 'debug',
-          filename: `logs/debug.${this.#entity.replace('/', '_')}.log`,
+          filename: `logs/debug.${this.#entity.replace('/', '_')}.${new Date().toISOString().slice(0, 10)}.log`,
           format: fileFormat,
         }),
       ],
@@ -85,7 +83,7 @@ export class Log {
    * @returns {string} Formatted message string
    * @private
    */
-  #formatMessage(msg) {
+  formatMessage(msg) {
     return typeof msg === 'object' && msg !== null ? JSON.stringify(msg) : msg
   }
 
@@ -97,15 +95,13 @@ export class Log {
    * @param {string} [level='info'] - The log level (info, warn, error, debug)
    * @private
    */
-  #logInDebugMode(message, level = 'info') {
+  logInDebugMode(message, level = 'info') {
     if (this.#logger) {
       this.#logger.log(level, message)
     } else {
       console.log(message)
     }
   }
-
-  /* c8 ignore stop */
 
   get entity() {
     return this.#entity
@@ -119,8 +115,6 @@ export class Log {
     return this.#isDebug
   }
 
-  /* c8 ignore start */
-
   /**
    * Masks sensitive tokens in objects or strings.
    * Recursively looks for and replaces any occurrences of the authentication token
@@ -128,7 +122,7 @@ export class Log {
    * @param {any} value - The value to mask (object or string)
    * @returns {any} The masked value with sensitive information replaced by '***'
    */
-  #maskSensitive(value) {
+  maskSensitive(value) {
     // Early return if no token to mask or value is null/undefined
     if (!this.#token || value == null) {
       return value
@@ -137,7 +131,7 @@ export class Log {
     // Handle string values directly
     if (typeof value === 'string') {
       // Using a safe string replacement with global flag to replace all occurrences
-      return this.#token ? value.replace(new RegExp(this.#escapeRegExp(this.#token), 'g'), '***') : value
+      return this.#token ? value.replace(new RegExp(this.escapeRegExp(this.#token), 'g'), '***') : value
     }
 
     // Handle objects (including arrays)
@@ -154,11 +148,11 @@ export class Log {
 
         // Handle string values that contain the token
         if (typeof clone[key] === 'string' && this.#token && clone[key].includes(this.#token)) {
-          clone[key] = clone[key].replace(new RegExp(this.#escapeRegExp(this.#token), 'g'), '***')
+          clone[key] = clone[key].replace(new RegExp(this.escapeRegExp(this.#token), 'g'), '***')
         }
         // Recursively process nested objects
         else if (typeof clone[key] === 'object' && clone[key] !== null) {
-          clone[key] = this.#maskSensitive(clone[key])
+          clone[key] = this.maskSensitive(clone[key])
         }
       }
 
@@ -174,7 +168,7 @@ export class Log {
    * @returns {string} The escaped string
    * @private
    */
-  #escapeRegExp(string) {
+  escapeRegExp(string) {
     // Escape special RegExp characters to avoid regex syntax errors
     return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
   }
@@ -186,15 +180,15 @@ export class Log {
    * @param {...any} args - Additional arguments to log
    * @private
    */
-  #logWithPrefix(consoleMethod, msg, ...args) {
+  logWithPrefix(consoleMethod, msg, ...args) {
     // Mask sensitive data once for both message and arguments
-    const maskedMsg = this.#maskSensitive(msg)
-    const maskedArgs = this.#maskSensitive(...args)
+    const maskedMsg = this.maskSensitive(msg)
+    const maskedArgs = this.maskSensitive(...args)
 
     if (this.#isDebug && this.#logger) {
       // Use Winston for debug mode logging
-      const level = this.#getWinstonLevel(consoleMethod)
-      const message = this.#formatMessage(maskedMsg)
+      const level = this.getWinstonLevel(consoleMethod)
+      const message = this.formatMessage(maskedMsg)
 
       if (args.length > 0) {
         this.#logger.log(level, message, maskedArgs)
@@ -217,7 +211,7 @@ export class Log {
    * @returns {string} The corresponding Winston log level
    * @private
    */
-  #getWinstonLevel(consoleMethod) {
+  getWinstonLevel(consoleMethod) {
     // Map console methods to Winston log levels for proper log categorization
     switch (consoleMethod) {
       case console.error:
@@ -232,15 +226,13 @@ export class Log {
     }
   }
 
-  /* c8 ignore stop */
-
   /**
    * Logs a message without any prefix.
    * @param {string|object} msg - The message to log
    * @param {...any} args - Additional arguments to log
    */
   log(msg, ...args) {
-    this.#logWithPrefix(console.log, msg, ...args)
+    this.logWithPrefix(console.log, msg, ...args)
   }
 
   /**
@@ -249,7 +241,7 @@ export class Log {
    * @param {...any} args - Additional arguments to log
    */
   info(msg, ...args) {
-    this.#logWithPrefix(console.log, msg, ...args)
+    this.logWithPrefix(console.log, msg, ...args)
   }
 
   /**
@@ -260,7 +252,7 @@ export class Log {
   warn(msg, ...args) {
     // Skip warning logging when not in debug mode for better performance
     if (!this.#isDebug) return
-    this.#logWithPrefix(console.warn, msg, ...args)
+    this.logWithPrefix(console.warn, msg, ...args)
   }
 
   /**
@@ -269,7 +261,7 @@ export class Log {
    * @param {...any} args - Additional arguments to log
    */
   error(msg, ...args) {
-    this.#logWithPrefix(console.error, msg, ...args)
+    this.logWithPrefix(console.error, msg, ...args)
   }
 
   /**
@@ -281,7 +273,7 @@ export class Log {
   debug(msg, ...args) {
     // Skip debug logging when not in debug mode for better performance
     if (!this.#isDebug) return
-    this.#logWithPrefix(console.debug, msg, ...args)
+    this.logWithPrefix(console.debug, msg, ...args)
   }
 
   /**
@@ -290,9 +282,9 @@ export class Log {
    * @param {string} text - The text to display
    */
   start(text) {
-    const maskedText = this.#maskSensitive(text)
+    const maskedText = this.maskSensitive(text)
     if (this.#isDebug) {
-      this.#logInDebugMode(maskedText)
+      this.logInDebugMode(maskedText)
     } else if (this.#spinner) {
       this.#spinner.start(maskedText)
     }
@@ -307,15 +299,15 @@ export class Log {
    * @param {string} [options.prefixText=''] - Optional prefix text to prepend
    * @param {string} [options.suffixText=''] - Optional suffix text to append
    */
-  stopAndPersist({symbol, text, prefixText = '', suffixText = ''}) {
+  async stopAndPersist({symbol, text, prefixText = '', suffixText = ''}) {
     // Mask all text components
-    const maskedText = this.#maskSensitive(text)
-    const maskedPrefixText = this.#maskSensitive(prefixText)
-    const maskedSuffixText = this.#maskSensitive(suffixText)
+    const maskedText = this.maskSensitive(text)
+    const maskedPrefixText = this.maskSensitive(prefixText)
+    const maskedSuffixText = this.maskSensitive(suffixText)
 
     if (this.#isDebug) {
       const message = [maskedPrefixText, symbol, maskedText, maskedSuffixText].join(' ')
-      this.#logInDebugMode(message)
+      this.logInDebugMode(message)
     } else if (this.#spinner) {
       this.#spinner.stopAndPersist({
         symbol,
@@ -333,9 +325,9 @@ export class Log {
    * @param {string} text - The failure message
    */
   fail(text) {
-    const maskedText = this.#maskSensitive(text)
+    const maskedText = this.maskSensitive(text)
     if (this.#isDebug) {
-      this.#logInDebugMode(maskedText, 'error')
+      this.logInDebugMode(maskedText, 'error')
     } else if (this.#spinner) {
       this.#spinner.fail(maskedText)
     }
@@ -347,9 +339,9 @@ export class Log {
    * @param {string} newText - The new text to display
    */
   set text(newText) {
-    const maskedText = this.#maskSensitive(newText)
+    const maskedText = this.maskSensitive(newText)
     if (this.#isDebug) {
-      this.#logInDebugMode(maskedText)
+      this.logInDebugMode(maskedText)
     } else if (this.#spinner) {
       this.#spinner.text = maskedText
     }
@@ -372,9 +364,14 @@ let instance = null
  * @param {string} entity - The entity name used for log file naming
  * @param {string} token - The authentication token to mask in logs
  * @param {boolean} [isDebug=false] - Enable debug mode
+ * @param {boolean} [createNewInstance=false] - Create a new instance if true, otherwise return existing instance
  * @returns {Log} Instance of Log class
  */
-export default function log(entity, token, isDebug = false) {
+export default function log(entity, token, isDebug = false, createNewInstance = false) {
+  if (createNewInstance === true) {
+    return new Log(entity, token, isDebug)
+  }
+
   if (!instance) {
     instance = new Log(entity, token, isDebug)
   }

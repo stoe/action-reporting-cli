@@ -332,13 +332,13 @@ export default class Repository extends Base {
       }
     } catch (error) {
       if (error.status === 404 || error.message.includes('Could not resolve to a Repository')) {
-        this.#logger.error(`Repository ${repoName} not found.`)
-
-        return {}
+        this.logger.error(`Repository ${repoName} not found.`)
       } else {
-        this.#logger.error(`Failed to fetch repository ${repoName}: ${error.message}`)
-        return {}
+        this.logger.error(`Failed to fetch repository ${repoName}: ${error.message}`)
       }
+
+      // Rethrow the error to be handled by the caller
+      throw error
     }
   }
 
@@ -367,7 +367,7 @@ export default class Repository extends Base {
 
       const wfs = []
       if (repository.object && repository.object.entries) {
-        for (const entry of repository.object.entries) {
+        for await (const entry of repository.object.entries) {
           // Skip non-YAML files
           if (!entry.path.endsWith('.yml') && !entry.path.endsWith('.yaml')) continue
 

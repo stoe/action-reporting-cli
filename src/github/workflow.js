@@ -256,8 +256,8 @@ export default class Workflow extends Base {
       workflow_id: path,
     })
 
-    // wait 0.5s to avoid rate limit
-    await wait(500)
+    // wait 1s to avoid rate limit
+    await wait(1000)
 
     const {
       data: {workflow_runs: runs},
@@ -298,7 +298,13 @@ export default class Workflow extends Base {
     }
   }
 
-  getYaml() {
+  /**
+   * Parses the workflow text as YAML.
+   * If the text is truncated, it logs a warning and returns null.
+   * If the YAML is malformed, it logs an error and returns null.
+   * @returns {Promise<object|null>} The parsed YAML object or null if parsing fails
+   */
+  async getYaml() {
     if (this.#isTruncated) {
       this.logger.warn('Workflow text is truncated. Skipping YAML parsing.')
 
@@ -306,7 +312,7 @@ export default class Workflow extends Base {
     }
 
     try {
-      return load(this.#text, 'utf8')
+      return await load(this.#text, 'utf8')
     } catch (error) {
       this.logger.error(`Malformed YAML: ${error.message}`)
 

@@ -132,7 +132,7 @@ export default class Owner extends Base {
    * @param {string} type - The owner type (user or organization)
    */
   set type(type) {
-    this.#type = type
+    this.#type = type.toLowerCase()
   }
 
   /**
@@ -178,7 +178,7 @@ export default class Owner extends Base {
       this.name = name
       this.id = id
       this.node_id = node_id
-      this.type = (type || '').toLowerCase()
+      this.type = type || ''
     } catch (error) {
       if (error.status === 404) {
         this.logger.error(`User ${user} not found`)
