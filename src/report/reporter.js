@@ -28,44 +28,9 @@ export default class Reporter {
   }
 
   /**
-   * Creates a path for the unique values report.
-   * @param {string} extension - The file extension without the dot
-   * @returns {string} The file path for the unique report
-   * @protected
-   */
-  createUniquePath(extension) {
-    const parsedPath = path.parse(this.path)
-    return path.join(parsedPath.dir, `${parsedPath.name}.unique.${extension}`)
-  }
-
-  /**
-   * Extracts unique "uses" values from the report data.
-   * @returns {Set<string>} A set containing unique "uses" values
-   * @protected
-   */
-  extractUniqueUses() {
-    const uniqueUses = new Set()
-
-    this.data.forEach(workflow => {
-      if (workflow.uses) {
-        if (Array.isArray(workflow.uses)) {
-          workflow.uses.forEach(use => uniqueUses.add(use))
-        } else if (typeof workflow.uses === 'string') {
-          uniqueUses.add(workflow.uses)
-        } else if (workflow.uses instanceof Set) {
-          // Handle Set type after refactoring
-          workflow.uses.forEach(use => uniqueUses.add(use))
-        }
-      }
-    })
-
-    return uniqueUses
-  }
-
-  /**
    * Saves unique "uses" values as a separate file.
    * Must be implemented by subclasses.
-   * @returns {Promise<void>} A promise that resolves when the unique uses file is saved
+   * @returns {Promise<void>} A promise that resolves when the file is saved
    */
   async saveUnique() {
     throw new Error('Method saveUnique() must be implemented by subclasses')
@@ -79,6 +44,53 @@ export default class Reporter {
    * @protected
    */
   async saveFile(filePath, content) {
-    await writeFile(filePath, content, 'utf8')
+    try {
+      await writeFile(filePath, content, 'utf8')
+    } catch (error) {
+      throw new Error(`Failed to write file ${filePath}: ${error.message}`)
+    }
+  }
+
+  /**
+   * Creates a path for the unique values report.
+   * @param {string} extension - The file extension without the dot
+   * @returns {string} The file path for the unique report
+   * @protected
+   */
+  createUniquePath(extension) {
+    const parsedPath = path.parse(this.path)
+    // If uniqueFlag is true, we return the original path (no .unique suffix)
+    // If uniqueFlag is 'both', we add the .unique suffix
+    return this.options.uniqueFlag === true
+      ? this.path
+      : path.join(parsedPath.dir, `${parsedPath.name}.unique.${extension}`)
+  }
+
+  /**
+   * Extracts unique "uses" values from the report data.
+   * @returns {Set<string>} A set containing unique "uses" values
+   * @protected
+   */
+  extractUniqueUses() {
+    const uniqueUses = new Set()
+
+    // Check if data exists and is an array before processing
+    if (!this.data || !Array.isArray(this.data)) {
+      return uniqueUses
+    }
+
+    this.data.forEach(workflow => {
+      if (workflow.uses) {
+        if (Array.isArray(workflow.uses)) {
+          workflow.uses.forEach(use => uniqueUses.add(use))
+        } else if (typeof workflow.uses === 'string') {
+          uniqueUses.add(workflow.uses)
+        } else if (workflow.uses instanceof Set) {
+          workflow.uses.forEach(use => uniqueUses.add(use))
+        }
+      }
+    })
+
+    return uniqueUses
   }
 }

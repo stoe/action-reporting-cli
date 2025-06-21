@@ -9,14 +9,14 @@ import Owner from '../github/owner.js'
 import Repository from '../github/repository.js'
 
 // Report classes
-import Csv from './csv.js'
-import Json from './json.js'
-import Markdown from './markdown.js'
+import CsvReporter from './csv.js'
+import JsonReporter from './json.js'
+import MarkdownReporter from './markdown.js'
 
 // Utilities
 import wait from '../util/wait.js'
 
-const {blue, bold, cyan, dim, green, red} = chalk
+const {blue, cyan, dim, green, red} = chalk
 
 /**
  * Base class for generating various types of reports.
@@ -31,7 +31,7 @@ export default class Report {
   #startTime
 
   /**
-   * Logger instance for debugging
+   * Logger instance for debugging.
    * @type {import('../util/log.js').default}
    * @private
    */
@@ -55,6 +55,7 @@ export default class Report {
    * @property {boolean} uses - Report uses values
    * @property {boolean} vars - Report vars used
    * @property {string} uniqueFlag - Unique flag value for uses reporting
+   * @private
    */
   #options
 
@@ -64,6 +65,7 @@ export default class Report {
    * @property {string} csv - CSV path for report output
    * @property {string} json - JSON path for report output
    * @property {string} md - Markdown path for report output
+   * @private
    */
   #output = {
     csv: '',
@@ -83,7 +85,7 @@ export default class Report {
     this.#logger = logger
     this.#cache = cache
 
-    this.#validateInput(flags)
+    this.validateInput(flags)
   }
 
   get startTime() {
@@ -112,7 +114,7 @@ export default class Report {
    * @param {object} flags - The CLI flags object from meow
    * @throws {Error} If any validation fails
    */
-  #validateInput(flags) {
+  validateInput(flags) {
     const {
       enterprise,
       owner,
@@ -163,7 +165,7 @@ export default class Report {
     this.#options = {
       hostname,
       all,
-      ...this.#processReportOptions(flags, uniqueFlag),
+      ...this.processReportOptions(flags, uniqueFlag),
       skipCache,
       archived,
       forked,
@@ -179,17 +181,10 @@ export default class Report {
   /**
    * Processes report flags and sets defaults when --all is specified.
    * @param {object} flags - The CLI flags object from meow
-   * @param {boolean} flags.listeners - Report on listeners used
-   * @param {boolean} flags.permissions - Report permissions values for GITHUB_TOKEN
-   * @param {boolean} flags.runsOn - Report runs-on values
-   * @param {boolean} flags.secrets - Report secrets used
-   * @param {boolean} flags.uses - Report uses values
-   * @param {boolean} flags.vars - Report vars used
-   * @param {boolean} flags.all - Report all options
    * @param {boolean|string} uniqueFlag - The processed unique flag value
    * @returns {object} Processed report configuration with all report options
    */
-  #processReportOptions(flags, uniqueFlag) {
+  processReportOptions(flags, uniqueFlag) {
     let {listeners, permissions, runsOn, secrets, vars, uses, all, exclude} = flags
     let processedUniqueFlag = uniqueFlag
 
@@ -224,12 +219,10 @@ export default class Report {
 
   /**
    * Formats a duration string for display in debug mode.
-   * Converts elapsed time into a compact format (Xh Xm Xs Xms) showing only non-zero values.
    * @param {Date} startTime - The start time to calculate duration from
    * @returns {string} Formatted duration string with dim styling for display
-   * @private
    */
-  #formatDuration(startTime) {
+  formatDuration(startTime) {
     const totalMs = new Date() - startTime
     const totalSeconds = Math.floor(totalMs / 1000)
 
@@ -253,12 +246,10 @@ export default class Report {
 
   /**
    * Handles cache operations for entity processing.
-   * Sets cache path, checks for existing cache, and loads if available.
    * @param {string} entityName - The name of the entity for cache path
    * @returns {Promise<{isCached: boolean, data: any}>} Cache status and data
-   * @private
    */
-  async #handleCache(entityName) {
+  async handleCache(entityName) {
     // Skip cache operations if cache is disabled
     if (this.#options.skipCache) {
       this.#logger.debug(`Cache disabled for ${entityName}`)
@@ -286,12 +277,9 @@ export default class Report {
   /**
    * Saves data to the cache.
    * @param {any} data - The data to save in the cache
-   * @param {import('../util/cache.js').default} cache - Cache instance
-   * @param {boolean} [disableCache=false] - Whether to disable cache functionality
-   * @returns {Promise<void>}
-   * @private
+   * @returns {Promise<void>} A promise that resolves when the data is saved
    */
-  async #saveToCache(data) {
+  async saveToCache(data) {
     if (this.#options.skipCache) {
       this.#logger.debug(`Cache saving skipped (cache disabled)`)
       return
@@ -309,6 +297,11 @@ export default class Report {
   /**
    * Processes an enterprise and loads its organizations and repositories.
    * @param {string} enterpriseName - The GitHub Enterprise account slug
+   * @param {string} token - GitHub Personal Access Token
+   * @param {string} hostname - GitHub hostname
+   * @param {boolean} debug - Whether to enable debug logging
+   * @param {boolean} archived - Whether to include archived repositories
+   * @param {boolean} forked - Whether to include forked repositories
    * @returns {Promise<{enterprise: Enterprise, organizations: number, repositories: number}>}
    *   Enterprise data with organization and repository counts
    * @throws {Error} When enterprise loading fails or API requests fail
@@ -324,98 +317,100 @@ export default class Report {
 
     this.#logger.start(`Loading enterprise ${cyan(enterpriseName)}...`)
 
-    const {isCached, data} = await this.#handleCache(enterpriseName)
+    // Brief delay to ensure spinner is visible
+    await wait(500)
+
+    const {isCached, data} = await this.handleCache(enterpriseName)
 
     let organizations = []
-    let repositories = 0
     let result = {
       organizations,
     }
     let reposCount = 0
 
-    if (isCached) {
-      result = data
+    try {
+      if (isCached) {
+        organizations = data.organizations.filter(org => {
+          // TODO: Skip organization if it's archived and we're excluding archived orgs
 
-      // Filter organizations and repositories based on archived and forked flags
-      organizations = result.organizations.map(org => {
-        // Filter repositories in each organization
-        const filteredRepos = org.repositories.filter(repo => {
-          // Skip repository if it's archived and we're excluding archived repos
-          if (archived && repo.isArchived) {
-            this.#logger.warn(`Skipping archived repository ${repo.nwo}`)
-            return false
-          }
+          // Filter organization repositories based on archived and forked flags
+          org.repositories = org.repositories.filter(repo => {
+            // Skip repository if it's archived and we're excluding archived repos
+            if (archived && repo.isArchived) {
+              this.#logger.warn(`Skipping archived repository ${repo.nwo}`)
+              return false
+            }
 
-          // Skip repository if it's forked and we're excluding forked repos
-          if (forked && repo.isFork) {
-            this.#logger.warn(`Skipping forked repository ${repo.nwo}`)
-            return false
-          }
+            // Skip repository if it's forked and we're excluding forked repos
+            if (forked && repo.isFork) {
+              this.#logger.warn(`Skipping forked repository ${repo.nwo}`)
+              return false
+            }
 
-          return true
-        })
-
-        // Return organization with filtered repositories
-        return {
-          ...org,
-          repositories: filteredRepos,
-        }
-      })
-
-      // Update repositories count
-      reposCount = organizations.reduce((count, org) => count + org.repositories.length, 0)
-    } else {
-      // Brief delay to ensure spinner is visible
-      await wait(500)
-
-      // Load enterprise organizations
-      await enterprise.getOrganizations(enterpriseName)
-
-      // Get organizations and repositories from the enterprise
-      organizations = enterprise.organizations
-      const orgCount = organizations.length
-      this.#logger.debug(`Loaded ${green(orgCount)} organizations for enterprise ${cyan(enterpriseName)}`)
-      for (const org of enterprise.organizations) {
-        const repoCount = org.repositories.length
-        this.#logger.debug(`Loaded ${green(repoCount)} repositories for organization ${cyan(org.login)}`)
-        // Get workflows for the organization
-        for (const repo of org.repositories) {
-          // Create a new Repository instance for each repository
-          const repoInstance = new Repository(repo.nwo, {
-            token,
-            hostname,
-            debug,
+            reposCount += 1
+            return true
           })
 
-          // Load workflows for each repository
-          const workflows = await repoInstance.getWorkflows(repo.owner, repo.name)
-          this.#logger.debug(`Loaded ${green(workflows.length)} workflows for repository ${cyan(repo.nwo)}`)
-          repo.workflows = workflows
+          return true // Keep organization in the list
+        })
 
-          repositories += 1
+        result = {
+          name: enterprise.name,
+          id: enterprise.id,
+          node_id: enterprise.node_id,
+          organizations,
         }
-        reposCount += repoCount
+      } else {
+        // Load enterprise organizations
+        await enterprise.getOrganizations(enterpriseName)
+
+        // Get organizations and repositories from the enterprise
+        organizations = enterprise.organizations
+
+        for await (const org of enterprise.organizations) {
+          const repoCount = org.repositories.length
+          reposCount += repoCount
+
+          // Get workflows for the organization
+          for await (const repo of org.repositories) {
+            // Create a new Repository instance for each repository
+            const repoInstance = new Repository(repo.nwo, {
+              token,
+              hostname,
+              debug,
+            })
+
+            // Load workflows for each repository
+            const workflows = await repoInstance.getWorkflows(repo.owner, repo.name)
+
+            repo.workflows = workflows
+          }
+        }
+
+        result = {
+          name: enterprise.name,
+          id: enterprise.id,
+          node_id: enterprise.node_id,
+          organizations,
+        }
+
+        // Save owner data to cache
+        await this.saveToCache(result)
       }
 
-      result = {
-        name: enterprise.name,
-        id: enterprise.id,
-        node_id: enterprise.node_id,
-        organizations,
-      }
-
-      // Save owner data to cache
-      await this.#saveToCache(result)
+      // Log successful completion with metrics
+      this.#logger.stopAndPersist({
+        symbol: green('✔'),
+        suffixText: this.formatDuration(this.#startTime),
+        text: `Loaded ${green(result.organizations.length)} organizations and ${green(reposCount)} repositories for enterprise ${green(enterpriseName)}.`,
+      })
+    } catch (error) {
+      this.#logger.stopAndPersist({
+        symbol: red('✖'),
+        suffixText: dim(error.message),
+        text: `Failed to load enterprise ${cyan(enterpriseName)}.`,
+      })
     }
-
-    // Log successful completion with metrics
-    this.#logger.stopAndPersist({
-      symbol: green('✔'),
-      suffixText: this.#formatDuration(this.#startTime),
-      text:
-        `Loaded ${green(result.organizations.length)} organizations and ` +
-        `${green(reposCount)} repositories for enterprise ${green(enterpriseName)}.`,
-    })
 
     return result
   }
@@ -435,7 +430,10 @@ export default class Report {
 
     this.#logger.start(`Loading ${owner.type} ${cyan(ownerName)}...`)
 
-    const {isCached, data} = await this.#handleCache(ownerName)
+    // Brief delay to ensure spinner is visible
+    await wait(500)
+
+    const {isCached, data} = await this.handleCache(ownerName)
     let repositories = []
 
     if (isCached) {
@@ -457,9 +455,6 @@ export default class Report {
         return true
       })
     } else {
-      // Brief delay to ensure spinner is visible
-      await wait(500)
-
       // Load repositories for the owner (user or organization)
       await ownerInstance.getRepositories(ownerName)
       repositories = ownerInstance.repositories
@@ -479,7 +474,7 @@ export default class Report {
       }
 
       // Save owner data to cache
-      await this.#saveToCache({
+      await this.saveToCache({
         ...owner,
         repositories,
       })
@@ -488,7 +483,7 @@ export default class Report {
     // Log successful completion with repository count
     this.#logger.stopAndPersist({
       symbol: green('✔'),
-      suffixText: this.#formatDuration(this.#startTime),
+      suffixText: this.formatDuration(this.#startTime),
       text: `Loaded ${green(repositories.length)} repositories for ${owner.type} ${green(ownerName)}.`,
     })
 
@@ -509,22 +504,22 @@ export default class Report {
 
     this.#logger.start(`Loading repository ${cyan(repoName)}...`)
 
+    // Brief delay to ensure spinner is visible and allow API processing
+    await wait(500)
+
     const [ownerName, repoShortName] = repoName.split('/')
-    const {isCached, data} = await this.#handleCache(`${ownerName}_${repoShortName}`)
+    const {isCached, data} = await this.handleCache(`${ownerName}_${repoShortName}`)
     let result = null
 
     if (isCached) {
       result = data
     } else {
-      // Brief delay to ensure spinner is visible and allow API processing
-      await wait(500)
-
       const repository = await repo.getRepo(repoName)
       repository.workflows = await repo.getWorkflows(repo.owner, repo.name)
       this.#logger.debug(`Loaded ${repository.workflows.length} workflows for repository ${repoName}`)
 
       // Save repository data to cache
-      await this.#saveToCache(repository)
+      await this.saveToCache(repository)
 
       result = repository
     }
@@ -532,7 +527,7 @@ export default class Report {
     // Log successful completion
     this.#logger.stopAndPersist({
       symbol: green('✔'),
-      suffixText: this.#formatDuration(this.#startTime),
+      suffixText: this.formatDuration(this.#startTime),
       text: `Loaded repository ${green(repoName)}.`,
     })
 
@@ -549,7 +544,7 @@ export default class Report {
     this.#logger.debug(`Processing report with options: ${JSON.stringify(this.#options)}`)
 
     // Get repositories from different data structures
-    const repos = this.#extractRepositoriesFromData(data)
+    const repos = this.extractRepositoriesFromData(data)
     if (repos.length === 0) {
       this.#logger.error(`${red('✖')} No data found to process.`, 'Stopping report generation.')
 
@@ -571,11 +566,11 @@ export default class Report {
 
     // Process each repository
     for await (const repo of repos) {
-      await this.#processRepositoryWorkflows(repo, reportData, reportTotalCounts)
+      await this.processRepositoryWorkflows(repo, reportData, reportTotalCounts)
     }
 
     // Log summary of processing results
-    this.#logProcessingResults(reportTotalCounts)
+    this.logProcessingResults(reportTotalCounts)
 
     return reportData
   }
@@ -584,9 +579,8 @@ export default class Report {
    * Extracts repositories from different data structures
    * @param {object} data - Input data that could be in various formats
    * @returns {Array} - Array of repositories
-   * @private
    */
-  #extractRepositoriesFromData(data) {
+  extractRepositoriesFromData(data) {
     // Enterprise: data.organizations[].repositories
     // Owner: data.repositories
     // Repository: data
@@ -609,27 +603,27 @@ export default class Report {
    * @param {Array} reportData - Collection to store workflow data
    * @param {object} reportTotalCounts - Counters to track statistics
    * @returns {Promise<void>}
-   * @private
    */
-  async #processRepositoryWorkflows(repo, reportData, reportTotalCounts) {
+  async processRepositoryWorkflows(repo, reportData, reportTotalCounts) {
     // Increment repository count
     reportTotalCounts.repos += 1
 
     const wfs = repo.workflows || []
-    this.#logger.start(`Processing repository ${cyan(repo.nwo)} workflows...`)
+    this.#logger.text = `Processing repository ${cyan(repo.nwo)} workflows...`
 
     if (wfs.length === 0) {
       this.#logger.stopAndPersist({
         symbol: dim('-'),
         text: `No workflows found in repository ${cyan(repo.nwo)}.`,
       })
+
       return
     }
 
     try {
       // Process each workflow according to enabled report options
       for (const wf of wfs) {
-        const workflowData = this.#processWorkflow(wf, repo, reportTotalCounts)
+        const workflowData = this.processWorkflow(wf, repo, reportTotalCounts)
         if (workflowData) reportData.push(workflowData)
       }
 
@@ -655,9 +649,8 @@ export default class Report {
    * @param {object} repo - Parent repository object
    * @param {object} reportTotalCounts - Counters to update
    * @returns {object|null} - Workflow data or null if workflow couldn't be processed
-   * @private
    */
-  #processWorkflow(wf, repo, reportTotalCounts) {
+  processWorkflow(wf, repo, reportTotalCounts) {
     const {language, text, yaml} = wf
 
     if (language !== 'YAML') {
@@ -670,10 +663,10 @@ export default class Report {
     // Increment workflow count
     reportTotalCounts.workflows += 1
 
-    const workflowData = this.#createWorkflowDataObject(wf, repo)
+    const workflowData = this.createWorkflowDataObject(wf, repo)
 
     // Extract all configured data from the workflow
-    this.#extractWorkflowContents(workflowData, yaml, text, reportTotalCounts)
+    this.extractWorkflowContents(workflowData, yaml, text, reportTotalCounts)
 
     return workflowData
   }
@@ -683,9 +676,8 @@ export default class Report {
    * @param {object} wf - Workflow object
    * @param {object} repo - Repository object
    * @returns {object} - New workflow data object
-   * @private
    */
-  #createWorkflowDataObject(wf, repo) {
+  createWorkflowDataObject(wf, repo) {
     const res = {
       id: wf.node_id,
       owner: repo.owner,
@@ -716,45 +708,45 @@ export default class Report {
    * @param {object} reportTotalCounts - Counters to update
    * @private
    */
-  #extractWorkflowContents(workflowData, yaml, text, reportTotalCounts) {
+  extractWorkflowContents(workflowData, yaml, text, reportTotalCounts) {
     // Extract listeners
     if (this.#options.listeners) {
-      const listeners = this.#extractListeners(yaml)
+      const listeners = this.extractListeners(yaml)
       workflowData.listeners = new Set([...workflowData.listeners, ...listeners])
       reportTotalCounts.listeners += listeners.length
     }
 
     // Extract permissions
     if (this.#options.permissions) {
-      const permissions = this.#extractPermissions(yaml)
+      const permissions = this.extractPermissions(yaml)
       workflowData.permissions = new Set([...workflowData.permissions, ...permissions])
       reportTotalCounts.permissions += permissions.length
     }
 
     // Extract runs-on values
     if (this.#options.runsOn) {
-      const runsOnValues = this.#extractRunsOn(yaml)
+      const runsOnValues = this.extractRunsOn(yaml)
       workflowData.runsOn = new Set([...workflowData.runsOn, ...runsOnValues])
       reportTotalCounts.runsOn += runsOnValues.length
     }
 
     // Extract secrets
     if (this.#options.secrets) {
-      const secrets = this.#extractSecrets(text)
+      const secrets = this.extractSecrets(text)
       workflowData.secrets = new Set([...workflowData.secrets, ...secrets])
       reportTotalCounts.secrets += secrets.size
     }
 
     // Extract vars
     if (this.#options.vars) {
-      const vars = this.#extractVars(text)
+      const vars = this.extractVars(text)
       workflowData.vars = new Set([...workflowData.vars, ...vars])
       reportTotalCounts.vars += vars.size
     }
 
     // Extract uses
     if (this.#options.uses) {
-      const uses = this.#extractUses(text)
+      const uses = this.extractUses(text)
       workflowData.uses = new Set([...workflowData.uses, ...uses])
       reportTotalCounts.uses += uses.size
     }
@@ -765,7 +757,7 @@ export default class Report {
    * @param {object} reportTotalCounts - Statistics to log
    * @private
    */
-  #logProcessingResults(reportTotalCounts) {
+  logProcessingResults(reportTotalCounts) {
     this.#logger.debug('Report processing complete. Found:')
     this.#logger.debug(`\trepos:        ${reportTotalCounts.repos}`)
     this.#logger.debug(`\tworkflows:    ${reportTotalCounts.workflows}`)
@@ -787,7 +779,7 @@ export default class Report {
    * @returns {string[]} - Array of unique values for the given key
    * @private
    */
-  #extractYamlKeyValues(yaml, key, optionFlag, results = []) {
+  extractYamlKeyValues(yaml, key, optionFlag, results = []) {
     // Early return if option is disabled
     if (!this.#options[optionFlag]) {
       return results
@@ -803,9 +795,15 @@ export default class Report {
     for (const k in yaml) {
       const value = yaml[k]
 
+      // Special handling for runs-on key - only look at job level (immediate children of jobs)
+      if (key === 'runs-on' && k === 'steps') {
+        // Skip "steps" sections when looking for runs-on as it's only valid at job level
+        continue
+      }
+
       // Recursively search nested objects
       if (k !== key && typeof value === 'object') {
-        this.#extractYamlKeyValues(value, key, optionFlag, res)
+        this.extractYamlKeyValues(value, key, optionFlag, res)
       }
 
       // Handle when we find the target key
@@ -852,8 +850,8 @@ export default class Report {
    * @returns {string[]} - Array of unique listeners
    * @private
    */
-  #extractListeners(yaml, results = []) {
-    return this.#extractYamlKeyValues(yaml, 'on', 'listeners', results)
+  extractListeners(yaml, results = []) {
+    return this.extractYamlKeyValues(yaml, 'on', 'listeners', results)
   }
 
   /**
@@ -863,8 +861,8 @@ export default class Report {
    * @returns {string[]} - Array of unique permissions
    * @private
    */
-  #extractPermissions(yaml, results = []) {
-    return this.#extractYamlKeyValues(yaml, 'permissions', 'permissions', results)
+  extractPermissions(yaml, results = []) {
+    return this.extractYamlKeyValues(yaml, 'permissions', 'permissions', results)
   }
 
   /**
@@ -874,8 +872,8 @@ export default class Report {
    * @returns {string[]} - Array of unique runs-on values
    * @private
    */
-  #extractRunsOn(yaml, results = []) {
-    return this.#extractYamlKeyValues(yaml, 'runs-on', 'runsOn', results)
+  extractRunsOn(yaml, results = []) {
+    return this.extractYamlKeyValues(yaml, 'runs-on', 'runsOn', results)
   }
 
   /**
@@ -892,7 +890,7 @@ export default class Report {
    * @returns {Set<string>} - Set of extracted secrets
    * @private
    */
-  #extractSecrets(text) {
+  extractSecrets(text) {
     const result = new Set()
 
     if (this.#options.secrets && text) {
@@ -922,7 +920,7 @@ export default class Report {
    * @returns {Set<string>} - Set of extracted vars
    * @private
    */
-  #extractVars(text) {
+  extractVars(text) {
     const result = new Set()
 
     if (this.#options.vars && text) {
@@ -952,7 +950,7 @@ export default class Report {
    * @returns {Set<string>} - Set of extracted uses values
    * @private
    */
-  #extractUses(text) {
+  extractUses(text) {
     const result = new Set()
 
     if (this.#options.uses && text) {
@@ -967,7 +965,7 @@ export default class Report {
 
         // Exclude actions created by GitHub (owner: actions||github)
         if (this.#options.exclude && (usesValue.startsWith('actions/') || usesValue.startsWith('github/'))) {
-          this.#logger.warn(`Excluding ${bold(usesValue)} created by GitHub.`)
+          this.#logger.warn(`Excluding ${usesValue} created by GitHub.`)
           continue
         }
 
@@ -995,29 +993,46 @@ export default class Report {
    * @returns {Promise<void>}
    * @private
    */
-  async #saveReportOfType(type, filePath, ReportClass, outputKey, fileExtension, data) {
+  async saveReportOfType(type, filePath, ReportClass, outputKey, fileExtension, data) {
     this.#logger.start(`Saving ${type} report...`)
 
     try {
       const report = new ReportClass(this.#output[outputKey], this.#options, data)
-      await report.save()
 
-      this.#logger.stopAndPersist({
-        symbol: green('✔'),
-        text: `${type} report saved to ${blue(filePath)}`,
-      })
+      // Handle 3 scenarios based on uniqueFlag:
+      // - false: only save regular report, no unique report
+      // - true: only save unique report (without .unique suffix)
+      // - 'both': save both regular and unique reports
+      const {uniqueFlag, uses} = this.#options
 
-      // Create a unique report if uniqueFlag is not false and uses option is enabled
-      if (this.options.uniqueFlag !== false && this.options.uses) {
-        this.#logger.start(`Saving unique ${type} report...`)
-
+      if (uniqueFlag === true && uses) {
+        // For uniqueFlag === true, only save unique report (without .unique suffix)
         await report.saveUnique()
 
-        const uniquePath = filePath.replace(`.${fileExtension}`, `.unique.${fileExtension}`)
         this.#logger.stopAndPersist({
           symbol: green('✔'),
-          text: `Unique ${type} report saved to ${blue(uniquePath)}`,
+          text: `Unique ${type} report saved to ${blue(filePath)}`,
         })
+      } else {
+        // For uniqueFlag === false or 'both', save the regular report
+        await report.save()
+
+        this.#logger.stopAndPersist({
+          symbol: green('✔'),
+          text: `${type} report saved to ${blue(filePath)}`,
+        })
+
+        // For uniqueFlag === 'both', also save the unique report
+        if (uniqueFlag === 'both' && uses) {
+          this.#logger.start(`Saving unique ${type} report...`)
+          await report.saveUnique()
+          const uniquePath = filePath.replace(`.${fileExtension}`, `.unique.${fileExtension}`)
+
+          this.#logger.stopAndPersist({
+            symbol: green('✔'),
+            text: `Unique ${type} report saved to ${blue(uniquePath)}`,
+          })
+        }
       }
     } catch (error) {
       this.#logger.stopAndPersist({
@@ -1058,19 +1073,19 @@ export default class Report {
     }
 
     // Empty line
-    !this.#logger.isDebug && console.log()
+    !this.#logger.isDebug && console.log('')
 
     // Save each report type if path is provided
     if (csv) {
-      await this.#saveReportOfType('CSV', csv, Csv, 'csv', 'csv', data)
+      await this.saveReportOfType('CSV', csv, CsvReporter, 'csv', 'csv', data)
     }
 
     if (json) {
-      await this.#saveReportOfType('JSON', json, Json, 'json', 'json', data)
+      await this.saveReportOfType('JSON', json, JsonReporter, 'json', 'json', data)
     }
 
     if (md) {
-      await this.#saveReportOfType('Markdown', md, Markdown, 'md', 'md', data)
+      await this.saveReportOfType('Markdown', md, MarkdownReporter, 'md', 'md', data)
     }
   }
 }
