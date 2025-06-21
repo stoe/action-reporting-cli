@@ -4,7 +4,7 @@
 
 > CLI to report on GitHub Actions usage across enterprises, organizations, users, and repositories
 
-`action-reporting-cli` helps you audit GitHub Actions usage across your GitHub environment by collecting comprehensive data about workflows, actions, secrets, variables, permissions, and dependencies. It supports GitHub.com, GitHub Enterprise Cloud, and GitHub Enterprise Server.
+`action-reporting-cli` helps you audit GitHub Actions usage across your entire GitHub environment. It collects comprehensive data about workflows, actions, secrets, variables, permissions, and dependencies, giving you valuable insights into your Actions usage. The tool works with GitHub.com, GitHub Enterprise Cloud, and GitHub Enterprise Server.
 
 ## Table of Contents
 
@@ -43,23 +43,23 @@ $ npx action-reporting-cli [--options]
 
 ## Authentication
 
-The tool requires a GitHub Personal Access Token (PAT) with appropriate permissions:
+You'll need a GitHub Personal Access Token (PAT) with these permissions:
 
-- For GitHub.com and GitHub Enterprise Cloud:
+- For GitHub.com, GitHub Enterprise Cloud, and GitHub Enterprise Cloud with Data Residency:
 
-  - `repo` scope for private repositories
-  - `workflow` scope to access GitHub Actions data
-  - `admin:org` scope when using `--owner` for organizations
+  - `repo` scope to access private repositories
+  - `workflow` scope to read GitHub Actions data
+  - `admin:org` scope when using `--owner` with organizations
 
 - For GitHub Enterprise Server:
   - Same permissions as above
-  - Ensure network access to your GitHub Enterprise Server instance
+  - Make sure you have network access to your GitHub Enterprise Server instance
 
-You can provide the token using the `--token` parameter or via the `GITHUB_TOKEN` environment variable.
+You can provide your token using the `--token` parameter or by setting the `GITHUB_TOKEN` environment variable.
 
 ## Usage
 
-The tool requires one target scope to analyze (enterprise, owner, or repository):
+You'll need to specify one target scope to analyze (enterprise, owner, or repository):
 
 ```sh
 # Basic usage pattern
@@ -70,69 +70,77 @@ $ action-reporting-cli --<scope> <name> --<report-options> --<output-options>
 
 ### Target Scope (Required, choose one)
 
-- `--enterprise`, `-e` GitHub Enterprise (Cloud|Server) account slug (e.g. _enterprise_).
-- `--owner`, `-o` GitHub organization/user login (e.g. _owner_).
-  If `--owner` is a user, results for the authenticated user (`--token`) will be returned.
-- `--repository`, `-r` GitHub repository name with owner (e.g. _owner/repo_).
+| Option                   | Description                                                                                                    | Example          |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------- | ---------------- |
+| `--enterprise`,<br/>`-e` | GitHub Enterprise Cloud or Server account slug                                                                 | _my-enterprise_  |
+| `--owner`,<br/>`-o`      | GitHub organization or user login.<br/>When `--owner` is a user, you'll get results for the authenticated user | _my-org_         |
+| `--repository`,<br/>`-r` | GitHub repository name with owner                                                                              | _my-org/my-repo_ |
 
 ### Authentication and Connection
 
-- `--token`, `-t` GitHub Personal Access Token (PAT) (default: environment variable `GITHUB_TOKEN`).
-- `--hostname` GitHub Enterprise Server hostname or GitHub Enterprise Cloud with Data Residency region endpoint (default: `api.github.com`).
-  For GitHub Enterprise Server: `github.example.com`
-  For GitHub Enterprise Cloud with Data Residency: `api.example.ghe.com`
+| Option              | Description                                                                                                                                                                                                                      | Default                             |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `--token`,<br/>`-t` | Your GitHub Personal Access Token                                                                                                                                                                                                | Environment variable `GITHUB_TOKEN` |
+| `--hostname`        | GitHub Enterprise Server hostname or GitHub Enterprise Cloud with Data Residency endpoint:<br/>- For GitHub Enterprise Server: `github.example.com`<br/>- For GitHub Enterprise Cloud with Data Residency: `api.example.ghe.com` | `api.github.com`                    |
 
 ### Report Content Options
 
-- `--all` Generate all report types listed below.
-- `--listeners` Report workflow `on` event listeners/triggers used.
-- `--permissions` Report `permissions` values set for `GITHUB_TOKEN`.
-- `--runs-on` Report `runs-on` runner environments used.
-- `--secrets` Report `secrets` referenced in workflows.
-- `--uses` Report `uses` statements for actions referenced.
-  - `--exclude` Exclude GitHub-created actions (from github.com/actions and github.com/github).
-  - `--unique` List unique GitHub Actions references.
-    Values: `true`, `false`, or `both` (default: `false`).
-    When `true` or `both`, creates additional `*-unique.{csv,json,md}` report files.
-- `--vars` Report `vars` referenced in workflows.
+| Option          | Description                                                                     | Default                                    | Notes                                                                                                                                                                                                           |
+| --------------- | ------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--all`         | Generate all report types listed below                                          |                                            |                                                                                                                                                                                                                 |
+| `--listeners`   | Report workflow `on` event listeners and triggers used                          |                                            |                                                                                                                                                                                                                 |
+| `--permissions` | Report `permissions` values set for `GITHUB_TOKEN`                              |                                            |                                                                                                                                                                                                                 |
+| `--runs-on`     | Report `runs-on` runner environments used                                       |                                            |                                                                                                                                                                                                                 |
+| `--secrets`     | Report `secrets` referenced in workflows                                        |                                            |                                                                                                                                                                                                                 |
+| `--uses`        | Report `uses` statements for actions referenced                                 |                                            |                                                                                                                                                                                                                 |
+| `--exclude`     | Skip GitHub-created Actions (from `github.com/actions` and `github.com/github`) |                                            | Use with `--uses`                                                                                                                                                                                               |
+| `--unique`      | List unique GitHub Actions references                                           | `false`<br/> `both` when used with `--all` | Values: `true`, `false`, or `both`.<br/>When `true` creates a `.unique` file with unique third-party actions.<br/>When `both`, creates two files: one with all actions and one with unique third-party actions. |
+| `--vars`        | Report `vars` referenced in workflows                                           |                                            |                                                                                                                                                                                                                 |
 
 ### Repository Filtering (for Enterprise/Owner Scopes)
 
-- `--archived` Skip archived repositories (default: `false`).
-- `--forked` Skip forked repositories (default: `false`).
+| Option       | Description                | Default |
+| ------------ | -------------------------- | ------- |
+| `--archived` | Skip archived repositories | `false` |
+| `--forked`   | Skip forked repositories   | `false` |
 
 ### Output Format Options
 
-- `--csv` Path to save CSV output (e.g. `/path/to/reports/report.csv`).
-- `--json` Path to save JSON output (e.g. `/path/to/reports/report.json`).
-- `--md` Path to save markdown output (e.g. `/path/to/reports/report.md`).
+| Option   | Description                  | Example                 |
+| -------- | ---------------------------- | ----------------------- |
+| `--csv`  | Path to save CSV output      | `./reports/report.csv`  |
+| `--json` | Path to save JSON output     | `./reports/report.json` |
+| `--md`   | Path to save Markdown output | `./reports/report.md`   |
 
 ### Utility Options
 
-- `--debug`, `-d` Enable debug mode with verbose logging.
-- `--skipCache` Disable caching of API responses.
-- `--help`, `-h` Print action-reporting-cli help.
-- `--version`, `-v` Print action-reporting-cli version.
+| Option                | Description                                                                             |
+| --------------------- | --------------------------------------------------------------------------------------- |
+| `--debug`,<br/>`-d`   | Enable debug mode with verbose logging                                                  |
+| `--skipCache`         | Disable caching of API responses (gets fresh data each time, only works with `--debug`) |
+| `--help`,<br/>`-h`    | Show command help and usage information                                                 |
+| `--version`,<br/>`-v` | Display the tool's version                                                              |
 
 ## Report Files
 
-The tool generates reports in your specified format(s) with the following naming convention:
+The tool generates reports in your specified format(s):
 
-- Enterprise reports: `enterprise.<slug>.[csv|json|md]`
-- Organization reports: `org.<org-name>.[csv|json|md]`
-- User reports: `user.<username>.[csv|json|md]`
-- Repository reports: `repository.<owner>-<repo>.[csv|json|md]`
+- **CSV**: Comma-separated values that you can easily import into spreadsheets
+- **JSON**: Structured data format for programmatic access or further processing
+- **Markdown**: Human-readable format that's perfect for documentation or sharing
 
-When using `--unique true` or `--unique both` with `--uses`, additional files with `.unique` suffix are created.
+When you use `--unique both` with `--uses`, you'll get an additional file with the `.unique` suffix containing only unique third-party actions.
 
 ## Examples
 
+Here are some common usage scenarios to help you get started:
+
 ### Enterprise-Wide Audit
 
-Generate a complete report on all GitHub Actions usage across an enterprise:
+Get a complete report on all GitHub Actions usage across your enterprise:
 
 ```sh
-# Report on everything in the `my-enterprise` GitHub Enterprise Cloud account
+# Analyze everything in your GitHub Enterprise Cloud account
 $ npx @stoe/action-reporting-cli \
   --token ghp_000000000000000000000000000000000000 \
   --enterprise my-enterprise \
@@ -147,7 +155,7 @@ $ npx @stoe/action-reporting-cli \
 Focus on specific aspects of GitHub Actions in an organization:
 
 ```sh
-# Report on permissions, runners, secrets, actions, and variables in a GitHub organization
+# Check permissions, runners, secrets, actions, and variables in your org
 $ npx @stoe/action-reporting-cli \
   --token ghp_000000000000000000000000000000000000 \
   --owner my-org \
@@ -159,15 +167,15 @@ $ npx @stoe/action-reporting-cli \
   --json ./reports/actions.json
 ```
 
-### Repository-Specific Report
+### Repository-Specific Analysis
 
-Analyze unique third-party actions used in a specific repository:
+Find unique third-party actions used in a specific repository:
 
 ```sh
-# Report on unique third-party GitHub Actions in a specific repository
+# Identify third-party actions in your repository
 $ npx @stoe/action-reporting-cli \
   --token ghp_000000000000000000000000000000000000 \
-  --repository my-org/myrepo \
+  --repository my-org/my-repo \
   --uses \
   --exclude \
   --unique both \
@@ -176,10 +184,10 @@ $ npx @stoe/action-reporting-cli \
 
 ### GitHub Enterprise Server
 
-Run the tool against GitHub Enterprise Server:
+Run the tool against your GitHub Enterprise Server instance:
 
 ```sh
-# Report on everything in an organization on GitHub Enterprise Server
+# Analyze an organization on GitHub Enterprise Server
 $ npx @stoe/action-reporting-cli \
   --hostname github.example.com \
   --token ghp_000000000000000000000000000000000000 \
@@ -193,10 +201,10 @@ $ npx @stoe/action-reporting-cli \
 Use environment variables for authentication:
 
 ```sh
-# Set token as environment variable
+# Set your token as an environment variable
 $ export GITHUB_TOKEN=ghp_000000000000000000000000000000000000
 
-# Run without specifying token in command
+# Run without including token in the command
 $ npx @stoe/action-reporting-cli \
   --owner my-org \
   --uses \
@@ -207,7 +215,7 @@ $ npx @stoe/action-reporting-cli \
 
 ### Filtering Repositories
 
-Skip archived or forked repositories in an enterprise-wide scan:
+Skip archived or forked repositories in your enterprise-wide scan:
 
 ```sh
 $ npx @stoe/action-reporting-cli \
@@ -220,19 +228,19 @@ $ npx @stoe/action-reporting-cli \
 
 ### Debugging Issues
 
-Enable debug mode for verbose logging:
+Enable debug mode when you need more information:
 
 ```sh
 $ npx @stoe/action-reporting-cli \
-  --repository my-org/myrepo \
+  --repository my-org/my-repo \
   --all \
   --debug \
   --md ./reports/actions.md
 ```
 
-### API Performance
+### Getting Fresh Data
 
-Skip cache for fresh data (may increase API usage):
+Skip the cache to get the most up-to-date information (uses more API calls, only works with `--debug`):
 
 ```sh
 $ npx @stoe/action-reporting-cli \
@@ -242,23 +250,26 @@ $ npx @stoe/action-reporting-cli \
   --json ./reports/actions.json
 ```
 
+## Performance Tips
+
+When working with large GitHub environments:
+
+- Use the `--debug` flag to monitor progress and identify any issues
+- For very large enterprises, consider running separate scans for specific organizations
+- Use repository filtering options (`--archived` and `--forked`) to reduce API calls or exclude unnecessary data
+
 ## Contributing
 
-Contributions to this project are welcome and appreciated! Whether you want to report a bug, suggest enhancements, or submit code changes, your help makes this project better.
+We welcome and appreciate your contributions! Whether you're reporting bugs, suggesting features, or submitting code changes, your help makes this project better.
 
-Please see our [contributing guidelines](./.github/contributing.md) for detailed information on:
+Please check out our [contributing guidelines](./.github/contributing.md) for information on:
 
 - How to submit bug reports and feature requests
-- The development workflow and coding standards
-- Pull request process and review expectations
-- Project structure and architecture
+- Development workflow and coding standards
+- Pull request process
+- Project structure
 
-Thank you to all our contributors!
-
-## Performance Considerations
-
-- Set `--debug` flag to see detailed progress information
-- For very large scans, consider targeting specific organizations or repositories
+Thank you to everyone who's contributed!
 
 ## License
 
