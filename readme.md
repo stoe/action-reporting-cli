@@ -46,7 +46,6 @@ $ npx action-reporting-cli [--options]
 You'll need a GitHub Personal Access Token (PAT) with these permissions:
 
 - For GitHub.com, GitHub Enterprise Cloud, and GitHub Enterprise Cloud with Data Residency:
-
   - `repo` scope to access private repositories
   - `workflow` scope to read GitHub Actions data
   - `admin:org` scope when using `--owner` with organizations
