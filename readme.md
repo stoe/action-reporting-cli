@@ -77,10 +77,10 @@ $ action-reporting-cli --<scope> <name> --<report-options> --<output-options>
 
 ### Authentication and Connection
 
-| Option              | Description                                                                                                                                                                                                                      | Default                             |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `--token`,<br/>`-t` | Your GitHub Personal Access Token                                                                                                                                                                                                | Environment variable `GITHUB_TOKEN` |
-| `--hostname`        | GitHub Enterprise Server hostname or GitHub Enterprise Cloud with Data Residency endpoint:<br/>- For GitHub Enterprise Server: `github.example.com`<br/>- For GitHub Enterprise Cloud with Data Residency: `api.example.ghe.com` | `api.github.com`                    |
+| Option              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                     | Default                             |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
+| `--token`,<br/>`-t` | Your GitHub Personal Access Token                                                                                                                                                                                                                                                                                                                                                                                                               | Environment variable `GITHUB_TOKEN` |
+| `--hostname`        | GitHub Enterprise Server hostname **or** GitHub Enterprise Cloud with Data Residency regional hostname.<br/>Examples:<br/>- GHES: `github.example.com` (resolved -> `https://github.example.com/api/v3`)<br/>- GHEC+DR: `example.ghe.com` (auto-resolved -> `https://api.example.ghe.com`)<br/>- GHEC+DR (explicit API host also accepted): `api.example.ghe.com` (left unchanged)<br/>If omitted, defaults to public: `https://api.github.com` | `api.github.com`                    |
 
 ### Report Content Options
 
@@ -129,6 +129,35 @@ The tool generates reports in your specified format(s):
 - **Markdown**: Human-readable format that's perfect for documentation or sharing
 
 When you use `--unique both` with `--uses`, you'll get an additional file with the `.unique` suffix containing only unique third-party actions.
+
+### Hostname Handling
+
+The CLI automatically normalizes the GitHub API base URL based on the value you pass to `--hostname`:
+
+| Input Provided                | Resolved API Base URL               | Classification                     |
+| ----------------------------- | ----------------------------------- | ---------------------------------- |
+| (none)                        | `https://api.github.com`            | Public GitHub                      |
+| `github.example.com`          | `https://github.example.com/api/v3` | GitHub Enterprise Server (GHES)    |
+| `https://github.example.com/` | `https://github.example.com/api/v3` | GHES (normalized)                  |
+| `example.ghe.com`             | `https://api.example.ghe.com`       | GHEC+DR regional (prefixed)        |
+| `api.example.ghe.com`         | `https://api.example.ghe.com`       | GHEC+DR regional (already API)     |
+| `HTTPS://Api.Example.GHE.COM` | `https://api.example.ghe.com`       | GHEC+DR (case + protocol stripped) |
+| `example.ghe.com/anything`    | `https://api.example.ghe.com`       | GHEC+DR (path stripped)            |
+
+Rules applied in order:
+
+1. If no hostname is provided, use the public API.
+2. If the hostname ends with `.ghe.com` (GitHub Enterprise Cloud with Data Residency):
+
+- If it already starts with `api.`, it's used as-is.
+- Otherwise `api.` is prefixed (no `/api/v3` suffix is added).
+
+3. All other custom hostnames are treated as GitHub Enterprise Server and `/api/v3` is appended.
+4. Protocol, trailing slashes, mixed case, and extraneous path segments are stripped/normalized.
+
+You can safely pass either the regional base (`example.ghe.com`) or the explicit API host (`api.example.ghe.com`); both resolve to the correct endpoint.
+
+> Tip: If your environment migrates between public GitHub and GHES/GHEC+DR, you can centralize logic by always providing `--hostname` and letting the tool normalize.
 
 ## Examples
 
