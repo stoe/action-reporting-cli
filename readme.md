@@ -1,6 +1,15 @@
 # action-reporting-cli
 
-[![test](https://github.com/stoe/action-reporting-cli/actions/workflows/test.yml/badge.svg)](https://github.com/stoe/action-reporting-cli/actions/workflows/test.yml) [![CodeQL](https://github.com/stoe/action-reporting-cli/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/stoe/action-reporting-cli/actions/workflows/github-code-scanning/codeql) [![publish](https://github.com/stoe/action-reporting-cli/actions/workflows/publish.yml/badge.svg)](https://github.com/stoe/action-reporting-cli/actions/workflows/publish.yml) [![styled with prettier](https://img.shields.io/badge/styled_with-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
+[![test](https://github.com/stoe/action-reporting-cli/actions/workflows/test.yml/badge.svg)](https://github.com/stoe/action-reporting-cli/actions/workflows/test.yml)
+[![publish](https://github.com/stoe/action-reporting-cli/actions/workflows/publish.yml/badge.svg)](https://github.com/stoe/action-reporting-cli/actions/workflows/publish.yml)
+[![CodeQL](https://github.com/stoe/action-reporting-cli/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/stoe/action-reporting-cli/actions/workflows/github-code-scanning/codeql)
+[![GitHub package.json version](https://img.shields.io/github/package-json/v/stoe/action-reporting-cli)](https://www.npmjs.com/package/@stoe/action-reporting-cli)
+[![npm downloads](https://img.shields.io/npm/dm/%40stoe%2Faction-reporting-cli.svg)](https://www.npmjs.com/package/@stoe/action-reporting-cli)
+[![install size](https://packagephobia.com/badge?p=@stoe/action-reporting-cli)](https://packagephobia.com/result?p=@stoe/action-reporting-cli)
+![node version](https://img.shields.io/badge/node-%3E=22-339933?logo=node.js)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/stoe/action-reporting-cli/badge)](https://securityscorecards.dev/viewer/?uri=github.com/stoe/action-reporting-cli)
+[![styled with prettier](https://img.shields.io/badge/styled_with-prettier-ff69b4.svg)](https://github.com/prettier/prettier)
+[![license](https://img.shields.io/github/license/stoe/action-reporting-cli.svg)](./license)
 
 > CLI to report on GitHub Actions usage across enterprises, organizations, users, and repositories
 
