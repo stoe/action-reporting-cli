@@ -27,14 +27,25 @@ export default function getOctokit(token, hostname = null, debug = false) {
   // Create separate logger instance for Octokit
   const logger = log('octokit', token, debug, true)
 
-  // Normalize hostname for GitHub Enterprise servers
+  // Normalize hostname for GitHub Enterprise (Server or Cloud with Data Residency)
+  // Rules:
+  //  - If hostname ends with `.ghe.com` (GHEC+DR regional hostname like `example.ghe.com`),
+  //    the API hostname is `https://api.<hostname>` (no `/api/v3` suffix).
+  //  - Otherwise (enterprise server host provided), append `/api/v3`.
+  //  - If no hostname provided, use public github.com API.
   if (hostname) {
     const normalizedHost = normalizeUrl(hostname, {
       removeTrailingSlash: true,
       stripProtocol: true,
     }).split('/')[0]
 
-    hostname = `https://${normalizedHost}/api/v3`
+    if (/\.ghe\.com$/i.test(normalizedHost)) {
+      // GHEC+DR regional host. If already api-prefixed, keep as-is; else prefix with api.
+      const gheCloudHost = normalizedHost.startsWith('api.') ? normalizedHost : `api.${normalizedHost}`
+      hostname = `https://${gheCloudHost}`
+    } else {
+      hostname = `https://${normalizedHost}/api/v3`
+    }
   } else {
     hostname = 'https://api.github.com'
   }
@@ -69,4 +80,13 @@ export default function getOctokit(token, hostname = null, debug = false) {
   }
 
   return instance
+}
+
+/**
+ * Helper to retrieve the resolved baseUrl from an Octokit instance.
+ * @param {import('@octokit/core').Octokit} octokit
+ * @returns {string|undefined}
+ */
+export function getBaseUrl(octokit) {
+  return octokit?.request?.endpoint?.DEFAULTS?.baseUrl
 }
