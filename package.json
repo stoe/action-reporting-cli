@@ -45,7 +45,7 @@
   "scripts": {
     "format": "npx prettier --config-precedence prefer-file --write . && eslint -c eslint.config.js . --fix",
     "prepare": "husky",
-    "pretest": "eslint -c eslint.config.js .",
+    "pregtest": "eslint -c eslint.config.js .",
     "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
   },
@@ -63,10 +63,10 @@
     "winston": "^3.18.3"
   },
   "devDependencies": {
+    "@eslint/markdown": "^7.3.0",
     "@github/prettier-config": "^0.0.6",
     "eslint": "^9.36.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-markdown": "^5.1.0",
     "eslint-plugin-prettier": "^5.5.4",
     "globals": "^16.4.0",
     "husky": "^9.1.7",

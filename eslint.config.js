@@ -1,5 +1,5 @@
+import markdown from '@eslint/markdown'
 import globals from 'globals'
-import markdown from 'eslint-plugin-markdown'
 import prettierConfig from 'eslint-config-prettier'
 import prettierPluginRecommended from 'eslint-plugin-prettier/recommended'
 
@@ -23,7 +23,7 @@ export default [
   ...markdown.configs.recommended,
   {
     files: ['**/*.md'],
-    processor: 'markdown/markdown',
+    processor: markdown.processors.markdown,
   },
   {
     files: ['**/*.md/*.js'],
