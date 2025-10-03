@@ -45,7 +45,7 @@
   "scripts": {
     "format": "npx prettier --config-precedence prefer-file --write . && eslint -c eslint.config.js . --fix",
     "prepare": "husky",
-    "pregtest": "eslint -c eslint.config.js .",
+    "pretest": "eslint -c eslint.config.js .",
     "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
   },
