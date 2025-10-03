@@ -17,14 +17,47 @@
 
 ## Table of Contents
 
-- [Installation](#installation)
-- [Authentication](#authentication)
-- [Usage](#usage)
-- [Options](#options)
-- [Examples](#examples)
-- [Report Files](#report-files)
-- [Contributing](#contributing)
-- [License](#license)
+1. [Quick Start](#quick-start)
+2. [Installation](#installation)
+3. [Authentication](#authentication)
+4. [Usage](#usage)
+5. [Options](#options)
+6. [Report Files](#report-files)
+7. [Examples](#examples)
+8. [Performance Tips](#performance-tips)
+9. [Contributing](#contributing)
+10. [License](#license)
+
+## Quick Start
+
+Get a full enterprise report (all report types) in three formats:
+
+```sh
+npx @stoe/action-reporting-cli \
+  --token YOUR_TOKEN \
+  --enterprise my-enterprise \
+  --all \
+  --json ./reports/actions.json \
+  --csv ./reports/actions.csv \
+  --md ./reports/actions.md
+```
+
+List unique third‑party actions for one repository:
+
+```sh
+npx @stoe/action-reporting-cli \
+  --token YOUR_TOKEN \
+  --repository my-org/my-repo \
+  --uses --exclude --unique both \
+  --csv ./reports/actions.csv
+```
+
+Minimal org scan (just actions used):
+
+```sh
+export GITHUB_TOKEN=YOUR_TOKEN
+npx @stoe/action-reporting-cli --owner my-org --uses --json ./report.json
+```
 
 ## Installation
 
@@ -67,67 +100,67 @@ You can provide your token using the `--token` parameter or by setting the `GITH
 
 ## Usage
 
-You'll need to specify one target scope to analyze (enterprise, owner, or repository):
+You must specify exactly one target scope (enterprise OR owner OR repository). Then add the report flags you want and at least one output format.
+
+Pattern:
 
 ```sh
-# Basic usage pattern
-$ action-reporting-cli --<scope> <name> --<report-options> --<output-options>
+action-reporting-cli --<scope> <name> [report flags] [output flags] [utility flags]
 ```
 
 ## Options
 
-### Target Scope (Required, choose one)
+### 1. Target Scope (required — choose exactly one)
 
-| Option                   | Description                                                                                                    | Example          |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------- | ---------------- |
-| `--enterprise`,<br/>`-e` | GitHub Enterprise Cloud or Server account slug                                                                 | _my-enterprise_  |
-| `--owner`,<br/>`-o`      | GitHub organization or user login.<br/>When `--owner` is a user, you'll get results for the authenticated user | _my-org_         |
-| `--repository`,<br/>`-r` | GitHub repository name with owner                                                                              | _my-org/my-repo_ |
+- `--enterprise`, `-e <slug>`: Enterprise account slug (GitHub Enterprise Cloud or Server)
+- `--owner`, `-o <login>`: Organization or user login (user returns authenticated user’s repos)
+- `--repository`, `-r <owner/name>`: Single repository
 
-### Authentication and Connection
+### 2. Authentication & Connection
 
-| Option              | Description                                                                                                                                                                                                                                                                                                                                                                                                                                     | Default                             |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------- |
-| `--token`,<br/>`-t` | Your GitHub Personal Access Token                                                                                                                                                                                                                                                                                                                                                                                                               | Environment variable `GITHUB_TOKEN` |
-| `--hostname`        | GitHub Enterprise Server hostname **or** GitHub Enterprise Cloud with Data Residency regional hostname.<br/>Examples:<br/>- GHES: `github.example.com` (resolved -> `https://github.example.com/api/v3`)<br/>- GHEC+DR: `example.ghe.com` (auto-resolved -> `https://api.example.ghe.com`)<br/>- GHEC+DR (explicit API host also accepted): `api.example.ghe.com` (left unchanged)<br/>If omitted, defaults to public: `https://api.github.com` | `api.github.com`                    |
+- `--token`, `-t <token>`: Personal Access Token (defaults to `GITHUB_TOKEN` env var)
+- `--hostname <host>`: Custom host.
+  - GHES example: `github.example.com` → `https://github.example.com/api/v3`
+  - GHEC+DR regional: `example.ghe.com` → `https://api.example.ghe.com`
+  - Already API host: `api.example.ghe.com` (unchanged)
+  - Omit for public: `https://api.github.com`
 
-### Report Content Options
+### 3. Report Content Flags
 
-| Option          | Description                                                                     | Default                                    | Notes                                                                                                                                                                                                           |
-| --------------- | ------------------------------------------------------------------------------- | ------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--all`         | Generate all report types listed below                                          |                                            |                                                                                                                                                                                                                 |
-| `--listeners`   | Report workflow `on` event listeners and triggers used                          |                                            |                                                                                                                                                                                                                 |
-| `--permissions` | Report `permissions` values set for `GITHUB_TOKEN`                              |                                            |                                                                                                                                                                                                                 |
-| `--runs-on`     | Report `runs-on` runner environments used                                       |                                            |                                                                                                                                                                                                                 |
-| `--secrets`     | Report `secrets` referenced in workflows                                        |                                            |                                                                                                                                                                                                                 |
-| `--uses`        | Report `uses` statements for actions referenced                                 |                                            |                                                                                                                                                                                                                 |
-| `--exclude`     | Skip GitHub-created Actions (from `github.com/actions` and `github.com/github`) |                                            | Use with `--uses`                                                                                                                                                                                               |
-| `--unique`      | List unique GitHub Actions references                                           | `false`<br/> `both` when used with `--all` | Values: `true`, `false`, or `both`.<br/>When `true` creates a `.unique` file with unique third-party actions.<br/>When `both`, creates two files: one with all actions and one with unique third-party actions. |
-| `--vars`        | Report `vars` referenced in workflows                                           |                                            |                                                                                                                                                                                                                 |
+Pick any combination (or just `--all`):
 
-### Repository Filtering (for Enterprise/Owner Scopes)
+- `--all`: Shorthand for all report types below (also sets `--unique both` for actions when combined with `--uses` logic)
+- `--listeners`: Workflow `on` event triggers
+- `--permissions`: `permissions` blocks for the default `GITHUB_TOKEN`
+- `--runs-on`: Runner labels / environments used
+- `--secrets`: Referenced secrets in workflows
+- `--uses`: `uses:` action references
+  - `--exclude`: Skip first‑party actions (`actions/*` and `github/*`) — only meaningful with `--uses`
+  - `--unique <true|false|both>`: Reduce duplicates for third‑party actions.
+    - `false` (default)
+    - `true`: Adds an extra `.unique` output containing only unique third‑party actions
+    - `both`: Keep full list plus `.unique` file (implied when `--all` includes actions)
+- `--vars`: Referenced `vars` in workflows
 
-| Option       | Description                | Default |
-| ------------ | -------------------------- | ------- |
-| `--archived` | Skip archived repositories | `false` |
-| `--forked`   | Skip forked repositories   | `false` |
+### 4. Repository Filtering (enterprise / owner scopes only)
 
-### Output Format Options
+- `--archived`: Skip archived repositories
+- `--forked`: Skip forked repositories
 
-| Option   | Description                  | Example                 |
-| -------- | ---------------------------- | ----------------------- |
-| `--csv`  | Path to save CSV output      | `./reports/report.csv`  |
-| `--json` | Path to save JSON output     | `./reports/report.json` |
-| `--md`   | Path to save Markdown output | `./reports/report.md`   |
+### 5. Output Formats (at least one recommended)
 
-### Utility Options
+- `--csv <path>`: Write CSV report
+- `--json <path>`: Write JSON report
+- `--md <path>`: Write Markdown report
 
-| Option                | Description                                                                             |
-| --------------------- | --------------------------------------------------------------------------------------- |
-| `--debug`,<br/>`-d`   | Enable debug mode with verbose logging                                                  |
-| `--skipCache`         | Disable caching of API responses (gets fresh data each time, only works with `--debug`) |
-| `--help`,<br/>`-h`    | Show command help and usage information                                                 |
-| `--version`,<br/>`-v` | Display the tool's version                                                              |
+You can specify multiple output formats in one run.
+
+### 6. Utility & Meta
+
+- `--debug`, `-d`: Verbose progress + diagnostic logging
+- `--skipCache`: Force fresh API calls (only works when `--debug` is enabled)
+- `--help`, `-h`: Show inline usage help
+- `--version`, `-v`: Show version
 
 ## Report Files
 
@@ -141,32 +174,21 @@ When you use `--unique both` with `--uses`, you'll get an additional file with t
 
 ### Hostname Handling
 
-The CLI automatically normalizes the GitHub API base URL based on the value you pass to `--hostname`:
+The CLI normalizes the API base URL from `--hostname`:
 
-| Input Provided                | Resolved API Base URL               | Classification                     |
-| ----------------------------- | ----------------------------------- | ---------------------------------- |
-| (none)                        | `https://api.github.com`            | Public GitHub                      |
-| `github.example.com`          | `https://github.example.com/api/v3` | GitHub Enterprise Server (GHES)    |
-| `https://github.example.com/` | `https://github.example.com/api/v3` | GHES (normalized)                  |
-| `example.ghe.com`             | `https://api.example.ghe.com`       | GHEC+DR regional (prefixed)        |
-| `api.example.ghe.com`         | `https://api.example.ghe.com`       | GHEC+DR regional (already API)     |
-| `HTTPS://Api.Example.GHE.COM` | `https://api.example.ghe.com`       | GHEC+DR (case + protocol stripped) |
-| `example.ghe.com/anything`    | `https://api.example.ghe.com`       | GHEC+DR (path stripped)            |
+- (omitted): `https://api.github.com`
+- `github.example.com`: → append `/api/v3`
+- `example.ghe.com`: → prefix with `api.` (no `/api/v3`)
+- `api.example.ghe.com`: → used as provided
+- Extra protocol, case, paths, or trailing slashes are stripped
 
-Rules applied in order:
+Rule of thumb:
 
-1. If no hostname is provided, use the public API.
-2. If the hostname ends with `.ghe.com` (GitHub Enterprise Cloud with Data Residency):
+1. Ends with `.ghe.com`? Ensure it starts with `api.` (do NOT add `/api/v3`).
+2. Anything else custom? Treat as GHES → add `/api/v3`.
+3. Nothing passed? Use public API.
 
-- If it already starts with `api.`, it's used as-is.
-- Otherwise `api.` is prefixed (no `/api/v3` suffix is added).
-
-3. All other custom hostnames are treated as GitHub Enterprise Server and `/api/v3` is appended.
-4. Protocol, trailing slashes, mixed case, and extraneous path segments are stripped/normalized.
-
-You can safely pass either the regional base (`example.ghe.com`) or the explicit API host (`api.example.ghe.com`); both resolve to the correct endpoint.
-
-> Tip: If your environment migrates between public GitHub and GHES/GHEC+DR, you can centralize logic by always providing `--hostname` and letting the tool normalize.
+Tip: Always pass `--hostname` in scripts so moves between public / GHES / GHEC+DR need no code changes.
 
 ## Examples
 
