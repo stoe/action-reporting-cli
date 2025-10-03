@@ -48,7 +48,7 @@ function createHelpText() {
   ${bold('Additional options')}
     ${yellow(`--token`)}, ${yellow(`-t`)}       GitHub Personal Access Token (PAT) ${dim('(default GITHUB_TOKEN)')}.
     ${yellow(`--hostname`)}        GitHub Enterprise Server ${bold('hostname')} ${dim('(default api.github.com)')}.
-                       ${dim(`For example: ${yellow('github.example.com')}`)}
+                        ${dim(`For example: ${yellow('github.example.com')}`)}
 
   ${bold('Report options')}
     ${yellow(`--all`)}             Report all below or individually:
@@ -59,7 +59,7 @@ function createHelpText() {
       ${yellow(`--vars`)}          Report ${bold('vars')} used.
       ${yellow(`--uses`)}          Report ${bold('uses')} values.
         ${yellow(`--exclude`)}     Exclude GitHub Actions created by GitHub. ${dim(`(can be used with ${yellow('--all')})`)}
-                       ${dim(`From https://github.com/actions and https://github.com/github organizations.
+                        ${dim(`From https://github.com/actions and https://github.com/github organizations.
                         Only applies to ${yellow(`--uses`)}.`)}
         ${yellow(`--unique`)}      List unique GitHub Actions.
                         ${dim(
