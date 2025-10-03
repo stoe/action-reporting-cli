@@ -289,7 +289,8 @@ export default class Workflow extends Base {
       path: this.#path,
       language: this.#language,
       text: this.#text,
-      yaml: this.getYaml(),
+      // Ensure yaml is the parsed object, not a pending Promise (regression fix)
+      yaml: await this.getYaml(),
       isTruncated: this.#isTruncated,
       state: this.#state,
       created_at: this.#created_at,
