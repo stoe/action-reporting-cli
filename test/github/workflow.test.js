@@ -194,6 +194,8 @@ describe('workflow', () => {
       expect(result.created_at).toBe('2023-01-01T00:00:00.000Z')
       expect(result.updated_at).toBe('2023-01-02T00:00:00.000Z')
       expect(result.last_run_at).toBe('2023-01-03T00:00:00.000Z')
+      expect(result.yaml).not.toBeInstanceOf(Promise)
+      expect(typeof result.yaml).toBe('object')
     })
 
     test('should handle API errors gracefully', async () => {
@@ -224,5 +226,29 @@ describe('workflow', () => {
 
       expect(result.last_run_at).toBeNull()
     })
+  })
+
+  /**
+   * Regression test: ensure getWorkflow returns a parsed YAML object (not a Promise)
+   */
+  test('should resolve yaml object directly (regression)', async () => {
+    workflow.octokit.request = jest
+      .fn()
+      // workflow metadata
+      .mockResolvedValueOnce({
+        data: {
+          id: 42,
+          node_id: 'W_42',
+          state: 'active',
+          created_at: '2023-01-01T00:00:00Z',
+          updated_at: '2023-01-01T00:00:00Z',
+        },
+      })
+      // runs
+      .mockResolvedValueOnce({data: {workflow_runs: []}})
+
+    const result = await workflow.getWorkflow('o', 'r', workflow.path)
+    expect(result.yaml).not.toBeInstanceOf(Promise)
+    expect(result.yaml && typeof result.yaml).toBe('object')
   })
 })
