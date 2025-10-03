@@ -16,8 +16,8 @@
   "repository": "github:stoe/action-reporting-cli",
   "license": "MIT",
   "engines": {
-    "node": ">=20",
-    "npm": ">=10"
+    "node": ">=22",
+    "npm": ">=11"
   },
   "bin": {
     "action-reporting-cli": "./cli.js"
