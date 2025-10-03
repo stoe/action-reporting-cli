@@ -1,9 +1,9 @@
 {
-  "name": "action-permissions-cli (node v20, npm v10)",
+  "name": "action-reporting-cli (node v22, npm v11)",
   "build": {
     "dockerfile": "Dockerfile",
     "args": {
-      "VARIANT": "20"
+      "VARIANT": "22"
     }
   },
   "customizations": {
@@ -18,5 +18,5 @@
     "ghcr.io/devcontainers/features/github-cli": {}
   },
   "remoteUser": "node",
-  "postCreateCommand": "npm install && npm run build --if-present"
+  "postCreateCommand": "npm install -g npm@11 && npm --version && npm install && npm run build --if-present"
 }
