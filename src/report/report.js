@@ -653,7 +653,10 @@ export default class Report {
   processWorkflow(wf, repo, reportTotalCounts) {
     const {language, text, yaml} = wf
 
-    if (language !== 'YAML') {
+    // Robust language check:
+    // - If a language value is provided and it's not 'YAML', and we also do NOT have a parsed yaml object, skip.
+    // - If language is null/undefined but we have a yaml object, proceed (some APIs may omit language metadata).
+    if (language && language !== 'YAML' && !yaml) {
       this.#logger.warn(
         `Skipping workflow ${wf.path} in repository ${repo.nwo} due to unsupported language: ${language}`,
       )
