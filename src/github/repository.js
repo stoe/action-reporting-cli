@@ -281,32 +281,25 @@ export default class Repository extends Base {
       const [o, n] = repoName.split('/')
 
       const {
-        data: {
-          data: {
-            repository: {
-              nwo,
-              owner: {login: owner},
-              name,
-              id,
-              node_id,
-              visibility,
-              isArchived,
-              isFork,
-              defaultBranchRef,
-            },
-          },
+        repository: {
+          nwo,
+          owner: {login: owner},
+          name,
+          id,
+          node_id,
+          visibility,
+          isArchived,
+          isFork,
+          defaultBranchRef,
         },
-      } = await this.octokit.request('POST /graphql', {
-        query: REPO_QUERY,
-        variables: {owner: o, name: n},
-      })
+      } = await this.octokit.graphql(REPO_QUERY, {owner: o, name: n})
 
       this.#nwo = nwo
       this.#owner = owner
       this.#name = name
       this.#repo = {
-        owner: owner.login,
-        name: name,
+        owner,
+        name,
       }
       this.#id = id
       this.#node_id = node_id
@@ -353,16 +346,9 @@ export default class Repository extends Base {
     this.spinner.text = `Loading workflows for repository ${cyan(`${owner}/${repo}`)}...`
 
     try {
-      const {
-        data: {
-          data: {repository},
-        },
-      } = await this.octokit.request('POST /graphql', {
-        query: WORKFLOWS_QUERY,
-        variables: {
-          owner,
-          name: repo,
-        },
+      const {repository} = await this.octokit.graphql(WORKFLOWS_QUERY, {
+        owner,
+        name: repo,
       })
 
       const wfs = []

@@ -113,4 +113,68 @@ describe('Report extraction end-to-end (regression)', () => {
     expect(wf.vars instanceof Set && wf.vars.size).toBeGreaterThan(0)
     expect(wf.uses instanceof Set && wf.uses.size).toBeGreaterThan(0)
   })
+
+  test('should process workflow when language is null but yaml object exists', async () => {
+    const flags = {
+      token: 'TEST',
+      repository: 'o/r',
+      csv: null,
+      json: null,
+      md: null,
+      listeners: true,
+      permissions: true,
+      runsOn: true,
+      secrets: true,
+      vars: true,
+      uses: true,
+      unique: 'false',
+    }
+
+    const report = new Report(flags, mockLogger(), mockCache())
+
+    const wf = createWorkflow()
+    wf.language = null // simulate missing language metadata
+
+    const data = await report.createReport({workflows: [wf]})
+    expect(data).toHaveLength(1)
+    expect(data[0].name).toBe('CI Full')
+  })
+
+  test('should skip workflow when language is non-YAML and yaml object missing', async () => {
+    const flags = {
+      token: 'TEST',
+      repository: 'o/r',
+      csv: null,
+      json: null,
+      md: null,
+      listeners: true,
+      permissions: true,
+      runsOn: true,
+      secrets: true,
+      vars: true,
+      uses: true,
+      unique: 'false',
+    }
+
+    const report = new Report(flags, mockLogger(), mockCache())
+
+    const invalidWf = {
+      node_id: 'WF_node_invalid',
+      path: '.github/workflows/script.js',
+      language: 'JavaScript',
+      text: 'console.log("hi")',
+      yaml: null,
+      state: 'active',
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      last_run_at: new Date().toISOString(),
+    }
+
+    const validWf = createWorkflow()
+
+    const data = await report.createReport({workflows: [invalidWf, validWf]})
+    // Only the valid YAML workflow should be processed
+    expect(data).toHaveLength(1)
+    expect(data[0].workflow).toBe('.github/workflows/ci.yml')
+  })
 })

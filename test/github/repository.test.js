@@ -126,113 +126,112 @@ describe('repository', () => {
    */
   describe('workflow operations', () => {
     beforeEach(() => {
-      // Mock the octokit requests
-      repository.octokit.request = jest.fn()
+      // Mock the octokit GraphQL client
       repository.octokit.graphql = jest.fn()
     })
 
     test('should fetch workflows for repository', async () => {
-      const mockGraphQLResponse = {
-        data: {
-          data: {
-            repository: {
-              object: {
-                entries: [
-                  {
-                    name: 'ci.yml',
-                    path: '.github/workflows/ci.yml',
-                    language: {name: 'YAML'},
-                    object: {
-                      text: 'name: CI\non: push',
-                      isTruncated: false,
-                    },
-                  },
-                  {
-                    name: 'release.yml',
-                    path: '.github/workflows/release.yml',
-                    language: {name: 'YAML'},
-                    object: {
-                      text: 'name: Release\non: release',
-                      isTruncated: false,
-                    },
-                  },
-                ],
+      repository.octokit.graphql.mockResolvedValueOnce({
+        repository: {
+          object: {
+            entries: [
+              {
+                name: 'ci.yml',
+                path: '.github/workflows/ci.yml',
+                language: {name: 'YAML'},
+                object: {text: 'name: CI\non: push', isTruncated: false, node_id: '1'},
               },
-            },
+              {
+                name: 'release.yml',
+                path: '.github/workflows/release.yml',
+                language: {name: 'YAML'},
+                object: {text: 'name: Release\non: release', isTruncated: false, node_id: '2'},
+              },
+            ],
           },
         },
-      }
+      })
 
-      repository.octokit.request.mockResolvedValue(mockGraphQLResponse)
+      // Mock the REST workflow detail & runs requests invoked by Workflow#getWorkflow
+      repository.octokit.request = jest
+        .fn()
+        // First workflow detail
+        .mockResolvedValueOnce({
+          data: {
+            id: 101,
+            node_id: 'W_flow_101',
+            name: 'CI',
+            path: '.github/workflows/ci.yml',
+            state: 'active',
+            created_at: '2024-01-01T00:00:00Z',
+            updated_at: '2024-01-02T00:00:00Z',
+          },
+        })
+        // First workflow runs (only most recent run needed)
+        .mockResolvedValueOnce({
+          data: {
+            workflow_runs: [{updated_at: '2024-01-03T00:00:00Z'}],
+          },
+        })
+        // Second workflow detail
+        .mockResolvedValueOnce({
+          data: {
+            id: 202,
+            node_id: 'W_flow_202',
+            name: 'Release',
+            path: '.github/workflows/release.yml',
+            state: 'active',
+            created_at: '2024-02-01T00:00:00Z',
+            updated_at: '2024-02-02T00:00:00Z',
+          },
+        })
+        // Second workflow runs
+        .mockResolvedValueOnce({
+          data: {
+            workflow_runs: [{updated_at: '2024-02-03T00:00:00Z'}],
+          },
+        })
 
       const workflows = await repository.getWorkflows('mona', 'sample-repo')
 
       expect(Array.isArray(workflows)).toBe(true)
-      // Since the actual implementation will depend on Workflow constructor,
-      // we just verify that the method runs without error
-      expect(workflows).toBeDefined()
+      expect(workflows).toHaveLength(2)
     })
 
     test('should handle repositories without workflows', async () => {
-      const mockGraphQLResponse = {
-        data: {
-          data: {
-            repository: {
-              object: null,
-            },
-          },
-        },
-      }
-
-      repository.octokit.request.mockResolvedValueOnce(mockGraphQLResponse)
+      repository.octokit.graphql.mockResolvedValueOnce({
+        repository: {object: null},
+      })
 
       const workflows = await repository.getWorkflows('mona', 'sample-repo')
-
       expect(Array.isArray(workflows)).toBe(true)
       expect(workflows).toHaveLength(0)
     })
 
     test('should handle empty workflow directory', async () => {
-      const mockGraphQLResponse = {
-        data: {
-          data: {
-            repository: {
-              object: {
-                entries: [],
-              },
-            },
-          },
-        },
-      }
-
-      repository.octokit.request.mockResolvedValueOnce(mockGraphQLResponse)
+      repository.octokit.graphql.mockResolvedValueOnce({
+        repository: {object: {entries: []}},
+      })
 
       const workflows = await repository.getWorkflows('mona', 'sample-repo')
-
       expect(Array.isArray(workflows)).toBe(true)
       expect(workflows).toHaveLength(0)
     })
 
     test('should fetch repository metadata', async () => {
-      const mockRepoData = {
-        data: {
-          data: {
-            repository: {
-              nwo: 'mona/sample-repo',
-              owner: {login: 'mona'},
-              name: 'sample-repo',
-              id: 123,
-              node_id: 'MDEwOlJlcG9zaXRvcnkx',
-              visibility: 'PUBLIC',
-              isArchived: false,
-              isFork: false,
-              defaultBranchRef: {name: 'main'},
-            },
-          },
+      repository.octokit.graphql.mockResolvedValueOnce({
+        repository: {
+          nwo: 'mona/sample-repo',
+          owner: {login: 'mona'},
+          name: 'sample-repo',
+          id: 123,
+          node_id: 'MDEwOlJlcG9zaXRvcnkx',
+          visibility: 'PUBLIC',
+          isArchived: false,
+          isFork: false,
+          defaultBranchRef: {name: 'main'},
         },
-      }
-
-      repository.octokit.request.mockResolvedValueOnce(mockRepoData)
+      })
 
       const result = await repository.getRepo('mona/sample-repo')
 
@@ -242,6 +241,7 @@ describe('repository', () => {
       expect(result.visibility).toBe('PUBLIC')
       expect(result.isArchived).toBe(false)
       expect(result.isFork).toBe(false)
+      expect(result.branch).toBe('main')
     })
 
     test('should handle API errors when fetching workflows', async () => {
@@ -255,7 +255,7 @@ describe('repository', () => {
         },
       }
 
-      repository.octokit.request.mockResolvedValueOnce(mockGraphQLResponse)
+      repository.octokit.graphql.mockResolvedValueOnce(mockGraphQLResponse)
 
       const workflows = await repository.getWorkflows('mona', 'sample-repo')
       expect(Array.isArray(workflows)).toBe(true)
