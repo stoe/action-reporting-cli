@@ -298,8 +298,8 @@ export default class Repository extends Base {
       this.#owner = owner
       this.#name = name
       this.#repo = {
-        owner: owner,
-        name: name,
+        owner,
+        name,
       }
       this.#id = id
       this.#node_id = node_id
