@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "@octokit/core": "^7.0.5",
-    "@octokit/plugin-paginate-rest": "^13.2.0",
+    "@octokit/plugin-paginate-rest": "^14.0.0",
     "@octokit/plugin-throttling": "^11.0.2",
     "chalk": "^4.1.2, <6",
     "csv": "^6.4.1",
