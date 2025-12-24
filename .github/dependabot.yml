@@ -18,23 +18,15 @@ updates:
     schedule:
       interval: 'monthly'
     groups:
-      npm:
+      npm-production:
         patterns:
           - '*'
+        dependency-type: 'production'
+      npm-development:
+        patterns:
+          - '*'
+        dependency-type: 'development'
     commit-message:
       prefix: '⬆️ npm'
-    labels:
-      - 'dependency :robot:'
-
-  - package-ecosystem: 'docker'
-    directory: '/.devcontainer'
-    schedule:
-      interval: 'monthly'
-    groups:
-      docker:
-        patterns:
-          - '*'
-    commit-message:
-      prefix: '⬆️ docker'
     labels:
       - 'dependency :robot:'
