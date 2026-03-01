@@ -58,7 +58,7 @@
     "got": "^14.4.9",
     "js-yaml": "^4.1.0",
     "meow": "^14.0.0",
-    "normalize-url": "^8.1.0",
+    "normalize-url": "^9.0.0",
     "ora": "^9.0.0",
     "winston": "^3.18.3"
   },
