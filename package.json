@@ -63,7 +63,7 @@
     "winston": "^3.18.3"
   },
   "devDependencies": {
-    "@eslint/markdown": "^7.3.0",
+    "@eslint/markdown": "^8.0.1",
     "@github/prettier-config": "^0.0.6",
     "eslint": "^10.0.2",
     "eslint-config-prettier": "^10.1.8",
