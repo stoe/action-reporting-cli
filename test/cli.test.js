@@ -15,6 +15,7 @@ function runCli(args) {
     encoding: 'utf8',
     env: {
       ...process.env,
+      DEBUG: 'false',
       GITHUB_TOKEN: '',
     },
   })
