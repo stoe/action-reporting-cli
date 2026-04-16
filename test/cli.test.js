@@ -42,8 +42,10 @@ describe('cli', () => {
    */
   test('should display version information with --version flag', () => {
     const result = runCli(['--version'])
+    const outputLines = result.stdout.trim().split('\n')
+    const lastLine = outputLines[outputLines.length - 1]
 
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain(packageJson.version)
+    expect(lastLine).toBe(packageJson.version)
   })
 })
