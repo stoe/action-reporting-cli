@@ -194,7 +194,6 @@ const cli = meow(createHelpText(), {
   allowUnknownFlags: false,
   importMeta: import.meta,
   inferType: false,
-  input: [],
   flags: CLI_FLAGS,
 })
 
