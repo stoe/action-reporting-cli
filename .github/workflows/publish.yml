@@ -13,7 +13,5 @@ jobs:
       packages: write
       id-token: write
     with:
-      npm: true
+      npm: false
       gh: true
-    secrets:
-      npm_token: ${{ secrets.NPM_TOKEN }}
