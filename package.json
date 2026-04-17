@@ -50,30 +50,30 @@
     "test:watch": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --watch"
   },
   "dependencies": {
-    "@octokit/core": "^7.0.5",
+    "@octokit/core": "^7.0.6",
     "@octokit/plugin-paginate-rest": "^14.0.0",
-    "@octokit/plugin-throttling": "^11.0.2",
+    "@octokit/plugin-throttling": "^11.0.3",
     "chalk": "^4.1.2, <6",
-    "csv": "^6.4.1",
-    "got": "^14.4.9",
-    "js-yaml": "^4.1.0",
-    "meow": "^14.0.0",
+    "csv": "^6.5.1",
+    "got": "^15.0.2",
+    "js-yaml": "^4.1.1",
+    "meow": "^14.1.0",
     "normalize-url": "^9.0.0",
-    "ora": "^9.0.0",
-    "winston": "^3.18.3"
+    "ora": "^9.3.0",
+    "winston": "^3.19.0"
   },
   "devDependencies": {
     "@eslint/markdown": "^8.0.1",
     "@github/prettier-config": "^0.0.6",
-    "eslint": "^10.0.2",
+    "eslint": "^10.2.0",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
-    "globals": "^17.3.0",
+    "eslint-plugin-prettier": "^5.5.5",
+    "globals": "^17.5.0",
     "husky": "^9.1.7",
-    "jest": "^30.2.0",
-    "lint-staged": "^16.2.3",
-    "prettier": "^3.6.2",
-    "sinon": "^21.0.0"
+    "jest": "^30.3.0",
+    "lint-staged": "^16.4.0",
+    "prettier": "^3.8.3",
+    "sinon": "^21.1.2"
   },
   "husky": {
     "hooks": {
