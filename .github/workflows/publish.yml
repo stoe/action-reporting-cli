@@ -13,5 +13,5 @@ jobs:
       packages: write
       id-token: write
     with:
-      npm: false
+      npm: true
       gh: true
