@@ -41,8 +41,7 @@ Please ensure your contribution adheres to the following:
 - [ ] I have followed the code style guidelines in this project
 - [ ] I have updated the README.md if applicable
 - [ ] I have added tests for new functionality
-- [ ] All tests pass locally (`npm test`)
-- [ ] I have run the linter (`npm run lint`)
+- [ ] All tests pass locally (`npm test`, including pretest linting)
 - [ ] I have run the formatter (`npm run format`)
 - [ ] I have added/updated documentation for any new or changed functionality
 - [ ] My pull request title is descriptive and follows Gitmoji conventions

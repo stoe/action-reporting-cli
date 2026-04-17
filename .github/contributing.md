@@ -6,7 +6,7 @@ This document outlines the process for contributing to the project and provides 
 
 ## Code of Conduct
 
-By participating in this project, you are expected to uphold our [Code of Conduct](./code_of_conduct). We are committed to providing a welcoming and inspiring community for all. Please report unacceptable behavior to [github@stoelzle.me](mailto:github@stoelzle.me).
+By participating in this project, you are expected to uphold our [Code of Conduct](./code_of_conduct.md). We are committed to providing a welcoming and inspiring community for all. Please report unacceptable behavior to [github@stoelzle.me](mailto:github@stoelzle.me).
 
 For more information on community standards and best practices, see the [GitHub Communities Guide](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions).
 
