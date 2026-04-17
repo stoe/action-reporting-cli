@@ -6,13 +6,15 @@ This document outlines the process for contributing to the project and provides 
 
 ## Code of Conduct
 
-By participating in this project, you are expected to uphold our Code of Conduct. Please report unacceptable behavior to [github@stoelzle.me](mailto:github@stoelzle.me).
+By participating in this project, you are expected to uphold our [Code of Conduct](./code_of_conduct.md). We are committed to providing a welcoming and inspiring community for all. Please report unacceptable behavior to [github@stoelzle.me](mailto:github@stoelzle.me).
+
+For more information on community standards and best practices, see the [GitHub Communities Guide](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions).
 
 ## How Can I Contribute?
 
 ### Reporting Bugs
 
-Before creating bug reports, please check the existing issues to avoid duplicates. When you create a bug report, include as many details as possible:
+Before creating bug reports, please check the existing issues to avoid duplicates. Use the [Bug Report template](./issue_template/bug-report.md) when creating a bug report. When you create a bug report, include as many details as possible:
 
 - A clear and descriptive title
 - Steps to reproduce the behavior
@@ -21,14 +23,17 @@ Before creating bug reports, please check the existing issues to avoid duplicate
 - Environment details (OS, Node.js version, etc.)
 - Command line arguments you used with the tool
 
+See [About issue and pull request templates](https://docs.github.com/en/communities/using-templates-to-encourage-useful-issues-and-pull-requests/about-issue-and-pull-request-templates) for more information.
+
 ### Suggesting Enhancements
 
-Enhancement suggestions are tracked as GitHub issues. When creating an enhancement suggestion:
+Enhancement suggestions are tracked as GitHub issues. Use the [Feature Request template](./issue_template/feature-request.md) when creating an enhancement suggestion:
 
 - Use a clear and descriptive title
 - Provide a detailed description of the proposed functionality
 - Explain why this enhancement would be useful
 - Include code examples or mockups if applicable
+- Consider starting a discussion in [GitHub Discussions](https://github.com/stoe/action-reporting-cli/discussions) first for early feedback
 
 ### Pull Requests
 
@@ -39,9 +44,47 @@ Follow these steps to submit your contributions:
 3. Make your changes (see [Development Guidelines](#development-guidelines))
 4. Run tests to ensure they pass (`npm test`)
 5. Commit your changes using a descriptive commit message that follows our [commit message guidelines](#commit-message-guidelines)
+   - **All commits must be signed with a verified signature** (see [Commit Signing](#commit-signing))
 6. Push to your branch (`git push origin my-new-feature`)
-7. Create a new Pull Request
+7. Create a new Pull Request using the [Pull Request template](./pull_request_template.md)
 
+Pull requests that affect functionality must include updates to the relevant documentation in the README.md file.
+
+#### Labels
+
+Please add one or more repository labels to your pull request:
+
+- `bug :bug:`
+- `feature-request :construction:`
+- `dependency :robot:`
+- `github-action :robot:`
+- `help wanted :hand:`
+- `wontfix :no_entry:` (if the pull request closes as not planned)
+
+#### Commit Signing
+
+We require all commits to be signed with a verified signature to maintain the integrity and security of this project.
+
+**How to sign your commits:**
+
+- **GPG**: [Signing commits with GPG](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits)
+- **SSH**: [Signing commits with SSH](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits-with-ssh-key)
+- **Web UI**: Commits made through GitHub's web interface are automatically signed
+
+To configure automatic commit signing locally:
+
+```sh
+# For GPG
+git config --global user.signingKey <KEY_ID>
+git config --global commit.gpgsign true
+
+# For SSH
+git config --global gpg.format ssh
+git config --global user.signingKey ~/.ssh/id_ed25519.pub
+git config --global commit.gpgsign true
+```
+
+, please use the [Pull Request template](./pull_request_template.md). Pull requests that affect functionality must include updates to the relevant documentation in the README.md file
 When submitting pull requests that affect functionality, please make sure to update the relevant documentation in the README.md file as well.
 
 ## Development Guidelines
@@ -136,6 +179,7 @@ Examples:
 ## Additional Resources
 
 - [GitHub Pull Request Documentation](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests)
+- [GitHub Communities Guide](https://docs.github.com/en/communities/setting-up-your-project-for-healthy-contributions)
 - [Test documentation](../test/readme.md) for detailed testing information
 
 Thanks for contributing to action-reporting-cli!
