@@ -5,13 +5,77 @@ on:
     tags:
       - 'v*.*.*'
 
+env:
+  NODE_VERSION: 24
+  NPM_SCOPE: '@stoe'
+
 jobs:
-  publish:
-    uses: stoe/policies/.github/workflows/policy-node-publish.yml@main
+  publish_npm:
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: ${{ github.workflow }}-npm-${{ github.ref }}
+      cancel-in-progress: true
+
     permissions:
       contents: read
       packages: write
       id-token: write
-    with:
-      npm: true
-      gh: true
+
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          scope: ${{ env.NPM_SCOPE }}
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: NPM config
+        run: |
+          npm pkg delete scripts.prepare
+          npm install --ignore-scripts --pure-lockfile
+          git ls-files -z . | xargs -0 git update-index --assume-unchanged
+
+      - name: NPM publish
+        run: npm publish --provenance --access public
+
+  publish_gh:
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: ${{ github.workflow }}-gh-${{ github.ref }}
+      cancel-in-progress: true
+
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          scope: ${{ env.NPM_SCOPE }}
+          registry-url: 'https://npm.pkg.github.com'
+
+      - name: NPM config
+        run: |
+          npm pkg delete scripts.prepare
+          npm install --ignore-scripts --pure-lockfile
+          git ls-files -z . | xargs -0 git update-index --assume-unchanged
+
+      - name: GitHub Packages publish
+        run: npm publish --access public
