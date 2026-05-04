@@ -141,23 +141,30 @@ export class Log {
       // Use Object.keys() to iterate only own enumerable properties
       const keys = Array.isArray(clone) ? clone.keys() : Object.keys(clone)
       for (const key of keys) {
+        // Only operate on properties that exist on the shallow clone
+        if (!Object.hasOwn(clone, key)) {
+          continue
+        }
+
         // Special case for property named 'token'
         if (key === 'token' && typeof clone[key] === 'string') {
           clone[key] = '***'
           continue
         }
 
+        const val = clone[key]
+
         // Handle string values that contain the token
-        if (typeof clone[key] === 'string' && this.#token && clone[key].includes(this.#token)) {
-          clone[key] = clone[key].replace(new RegExp(this.escapeRegExp(this.#token), 'g'), '***')
+        if (typeof val === 'string' && this.#token && val.includes(this.#token)) {
+          clone[key] = val.replace(new RegExp(this.escapeRegExp(this.#token), 'g'), '***')
         }
         // Recursively process nested objects, but skip prototype-pollution
         // vectors to avoid writing into __proto__/constructor/prototype sinks
-        else if (typeof clone[key] === 'object' && clone[key] !== null) {
+        else if (typeof val === 'object' && val !== null) {
           if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
             continue
           }
-          clone[key] = this.maskSensitive(clone[key])
+          clone[key] = this.maskSensitive(val)
         }
       }
 
