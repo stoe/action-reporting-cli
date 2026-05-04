@@ -184,3 +184,63 @@ describe('log', () => {
     })
   })
 })
+
+/**
+ * Tests for security-related behavior using the real Log class.
+ */
+import {Log} from '../../src/util/log.js'
+
+describe('Log security', () => {
+  describe('isDebug boolean coercion', () => {
+    test('should coerce truthy non-boolean values to true', () => {
+      const l = new Log('entity', 'token', 'yes')
+      expect(l.isDebug).toBe(true)
+    })
+
+    test('should coerce falsy non-boolean values to false', () => {
+      const l = new Log('entity', 'token', 0)
+      expect(l.isDebug).toBe(false)
+    })
+
+    test('should keep explicit boolean true', () => {
+      const l = new Log('entity', 'token', true)
+      expect(l.isDebug).toBe(true)
+    })
+
+    test('should keep explicit boolean false', () => {
+      const l = new Log('entity', 'token', false)
+      expect(l.isDebug).toBe(false)
+    })
+  })
+
+  describe('maskSensitive prototype pollution guard', () => {
+    test('should not process __proto__ keys', () => {
+      const l = new Log('entity', 'secret123', false)
+      const input = JSON.parse('{"__proto__": {"polluted": true}, "safe": "secret123"}')
+      const result = l.maskSensitive(input)
+
+      expect(result.safe).toBe('***')
+      const emptyObj = {}
+      expect(emptyObj.polluted).toBeUndefined()
+    })
+
+    test('should not process constructor keys', () => {
+      const l = new Log('entity', 'secret123', false)
+      const input = {constructor: 'secret123', normal: 'secret123'}
+      const result = l.maskSensitive(input)
+
+      expect(result.normal).toBe('***')
+      // constructor key should be left untouched
+      expect(result.constructor).toBe('secret123')
+    })
+
+    test('should still mask tokens in regular properties', () => {
+      const l = new Log('entity', 'secret123', false)
+      const input = {name: 'hello secret123 world', nested: {value: 'secret123'}}
+      const result = l.maskSensitive(input)
+
+      expect(result.name).toBe('hello *** world')
+      expect(result.nested.value).toBe('***')
+    })
+  })
+})

@@ -24,7 +24,7 @@ export class Log {
   constructor(entity, token, isDebug = false) {
     this.#entity = entity
     this.#token = token
-    this.#isDebug = isDebug || process.env.DEBUG === 'true'
+    this.#isDebug = Boolean(isDebug) || process.env.DEBUG === 'true'
     this.#spinner = this.#isDebug ? null : ora()
 
     if (this.#isDebug) {
@@ -138,8 +138,15 @@ export class Log {
     if (typeof value === 'object') {
       const clone = Array.isArray(value) ? [...value] : {...value}
 
-      // Consolidate property checks into one loop for better performance
-      for (const key in clone) {
+      // Use Object.keys() to iterate only own enumerable properties
+      // and guard against prototype pollution via __proto__/constructor
+      const keys = Array.isArray(clone) ? clone.keys() : Object.keys(clone)
+      for (const key of keys) {
+        // Skip prototype-pollution keys
+        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+          continue
+        }
+
         // Special case for property named 'token'
         if (key === 'token' && typeof clone[key] === 'string') {
           clone[key] = '***'
