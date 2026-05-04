@@ -1,4 +1,6 @@
 import {access, mkdir, readFile, unlink, writeFile} from 'fs/promises'
+import {dirname} from 'node:path'
+import {sanitizePath} from './path.js'
 
 class Cache {
   /**
@@ -25,7 +27,7 @@ class Cache {
    * If a path is provided, it will be used as the cache file path.
    */
   constructor(path = null, logger) {
-    this.#path = path || `${process.cwd()}/cache/report.json`
+    this.#path = sanitizePath(path || `${process.cwd()}/cache/report.json`)
     this.#logger = logger
   }
 
@@ -42,7 +44,7 @@ class Cache {
    * @param {string} newPath - The new cache path to set
    */
   set path(newPath) {
-    this.#path = newPath
+    this.#path = sanitizePath(newPath)
   }
 
   /**
@@ -53,8 +55,9 @@ class Cache {
    */
   async save(data) {
     try {
-      await mkdir(`${process.cwd()}/cache`, {recursive: true})
-      this.#logger.debug(`Creating cache directory at ${process.cwd()}/cache`)
+      const dir = dirname(this.#path)
+      await mkdir(dir, {recursive: true})
+      this.#logger.debug(`Creating cache directory at ${dir}`)
 
       await writeFile(this.#path, JSON.stringify(data, null, 2))
       this.#logger.debug(`Cache saved to ${this.#path}`)

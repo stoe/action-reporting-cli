@@ -24,7 +24,7 @@ export class Log {
   constructor(entity, token, isDebug = false) {
     this.#entity = entity
     this.#token = token
-    this.#isDebug = isDebug || process.env.DEBUG === 'true'
+    this.#isDebug = Boolean(isDebug) || process.env.DEBUG === 'true'
     this.#spinner = this.#isDebug ? null : ora()
 
     if (this.#isDebug) {
@@ -138,8 +138,9 @@ export class Log {
     if (typeof value === 'object') {
       const clone = Array.isArray(value) ? [...value] : {...value}
 
-      // Consolidate property checks into one loop for better performance
-      for (const key in clone) {
+      // Use Object.keys() to iterate only own enumerable properties
+      const keys = Array.isArray(clone) ? clone.keys() : Object.keys(clone)
+      for (const key of keys) {
         // Special case for property named 'token'
         if (key === 'token' && typeof clone[key] === 'string') {
           clone[key] = '***'
@@ -150,8 +151,12 @@ export class Log {
         if (typeof clone[key] === 'string' && this.#token && clone[key].includes(this.#token)) {
           clone[key] = clone[key].replace(new RegExp(this.escapeRegExp(this.#token), 'g'), '***')
         }
-        // Recursively process nested objects
+        // Recursively process nested objects, but skip prototype-pollution
+        // vectors to avoid writing into __proto__/constructor/prototype sinks
         else if (typeof clone[key] === 'object' && clone[key] !== null) {
+          if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+            continue
+          }
           clone[key] = this.maskSensitive(clone[key])
         }
       }
@@ -283,10 +288,10 @@ export class Log {
    */
   start(text) {
     const maskedText = this.maskSensitive(text)
-    if (this.#isDebug) {
-      this.logInDebugMode(maskedText)
-    } else if (this.#spinner) {
+    if (this.#spinner) {
       this.#spinner.start(maskedText)
+    } else if (this.#logger) {
+      this.logInDebugMode(maskedText)
     }
   }
 
@@ -305,16 +310,16 @@ export class Log {
     const maskedPrefixText = this.maskSensitive(prefixText)
     const maskedSuffixText = this.maskSensitive(suffixText)
 
-    if (this.#isDebug) {
-      const message = [maskedPrefixText, symbol, maskedText, maskedSuffixText].join(' ')
-      this.logInDebugMode(message)
-    } else if (this.#spinner) {
+    if (this.#spinner) {
       this.#spinner.stopAndPersist({
         symbol,
         text: maskedText,
         suffixText: maskedSuffixText,
         prefixText: maskedPrefixText,
       })
+    } else if (this.#logger) {
+      const message = [maskedPrefixText, symbol, maskedText, maskedSuffixText].join(' ')
+      this.logInDebugMode(message)
     }
   }
 
@@ -326,10 +331,10 @@ export class Log {
    */
   fail(text) {
     const maskedText = this.maskSensitive(text)
-    if (this.#isDebug) {
-      this.logInDebugMode(maskedText, 'error')
-    } else if (this.#spinner) {
+    if (this.#spinner) {
       this.#spinner.fail(maskedText)
+    } else if (this.#logger) {
+      this.logInDebugMode(maskedText, 'error')
     }
   }
 
@@ -340,10 +345,10 @@ export class Log {
    */
   set text(newText) {
     const maskedText = this.maskSensitive(newText)
-    if (this.#isDebug) {
-      this.logInDebugMode(maskedText)
-    } else if (this.#spinner) {
+    if (this.#spinner) {
       this.#spinner.text = maskedText
+    } else if (this.#logger) {
+      this.logInDebugMode(maskedText)
     }
   }
 

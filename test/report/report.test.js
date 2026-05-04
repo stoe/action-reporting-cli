@@ -186,6 +186,14 @@ describe('Report', () => {
         new Report(flags, mockLogger, mockCache)
       }).toThrow('please provide a valid path for the JSON output')
     })
+
+    test('should throw error when output path contains null bytes', () => {
+      const flags = {...validFlags, csv: '/tmp/reports/\0malicious.csv'}
+
+      expect(() => {
+        new Report(flags, mockLogger, mockCache)
+      }).toThrow('Path must not contain null bytes')
+    })
   })
 
   /**

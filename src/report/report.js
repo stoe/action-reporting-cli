@@ -14,6 +14,7 @@ import JsonReporter from './json.js'
 import MarkdownReporter from './markdown.js'
 
 // Utilities
+import {sanitizePath} from '../util/path.js'
 import wait from '../util/wait.js'
 
 const {blue, cyan, dim, green, red} = chalk
@@ -172,9 +173,9 @@ export default class Report {
     }
 
     this.#output = {
-      csv,
-      json,
-      md,
+      csv: csv ? sanitizePath(csv) : csv,
+      json: json ? sanitizePath(json) : json,
+      md: md ? sanitizePath(md) : md,
     }
   }
 
