@@ -290,10 +290,10 @@ export class Log {
    */
   start(text) {
     const maskedText = this.maskSensitive(text)
-    if (this.#isDebug) {
-      this.logInDebugMode(maskedText)
-    } else if (this.#spinner) {
+    if (this.#spinner) {
       this.#spinner.start(maskedText)
+    } else if (this.#logger) {
+      this.logInDebugMode(maskedText)
     }
   }
 
@@ -312,16 +312,16 @@ export class Log {
     const maskedPrefixText = this.maskSensitive(prefixText)
     const maskedSuffixText = this.maskSensitive(suffixText)
 
-    if (this.#isDebug) {
-      const message = [maskedPrefixText, symbol, maskedText, maskedSuffixText].join(' ')
-      this.logInDebugMode(message)
-    } else if (this.#spinner) {
+    if (this.#spinner) {
       this.#spinner.stopAndPersist({
         symbol,
         text: maskedText,
         suffixText: maskedSuffixText,
         prefixText: maskedPrefixText,
       })
+    } else if (this.#logger) {
+      const message = [maskedPrefixText, symbol, maskedText, maskedSuffixText].join(' ')
+      this.logInDebugMode(message)
     }
   }
 
@@ -333,10 +333,10 @@ export class Log {
    */
   fail(text) {
     const maskedText = this.maskSensitive(text)
-    if (this.#isDebug) {
-      this.logInDebugMode(maskedText, 'error')
-    } else if (this.#spinner) {
+    if (this.#spinner) {
       this.#spinner.fail(maskedText)
+    } else if (this.#logger) {
+      this.logInDebugMode(maskedText, 'error')
     }
   }
 
@@ -347,10 +347,10 @@ export class Log {
    */
   set text(newText) {
     const maskedText = this.maskSensitive(newText)
-    if (this.#isDebug) {
-      this.logInDebugMode(maskedText)
-    } else if (this.#spinner) {
+    if (this.#spinner) {
       this.#spinner.text = maskedText
+    } else if (this.#logger) {
+      this.logInDebugMode(maskedText)
     }
   }
 
