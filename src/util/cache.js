@@ -1,4 +1,5 @@
 import {access, mkdir, readFile, unlink, writeFile} from 'fs/promises'
+import {sanitizePath} from './path.js'
 
 class Cache {
   /**
@@ -25,7 +26,7 @@ class Cache {
    * If a path is provided, it will be used as the cache file path.
    */
   constructor(path = null, logger) {
-    this.#path = path || `${process.cwd()}/cache/report.json`
+    this.#path = sanitizePath(path || `${process.cwd()}/cache/report.json`)
     this.#logger = logger
   }
 
@@ -42,7 +43,7 @@ class Cache {
    * @param {string} newPath - The new cache path to set
    */
   set path(newPath) {
-    this.#path = newPath
+    this.#path = sanitizePath(newPath)
   }
 
   /**

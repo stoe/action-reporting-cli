@@ -101,12 +101,19 @@ describe('cache', () => {
       const initialPath = cache.path
       const newPath = '/new/path/to/cache.json'
 
-      // Test getter
+      // Test getter - path is sanitized (resolved) on construction
       expect(initialPath).toBe(`${process.cwd()}/cache/report.json`)
 
-      // Test setter
+      // Test setter - path is sanitized (resolved)
       cache.path = newPath
       expect(cache.path).toBe(newPath)
+    })
+
+    test('setter should reject null bytes in path', () => {
+      const cache = cacheInstance(null, logger)
+      expect(() => {
+        cache.path = '/tmp/\0malicious'
+      }).toThrow('Path must not contain null bytes')
     })
   })
 
