@@ -1067,7 +1067,7 @@ export default class Report {
 
     // Check if the folder exists we're saving the reports to
     // If not, create it
-    const outputDir = path.dirname(csv || json || md)
+    const outputDir = sanitizePath(path.dirname(csv || json || md))
     try {
       await fs.access(outputDir)
     } catch (error) {

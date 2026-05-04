@@ -1,6 +1,8 @@
 import {access, mkdir, readFile, unlink, writeFile} from 'fs/promises'
-import {dirname} from 'node:path'
+import path, {dirname} from 'node:path'
 import {sanitizePath} from './path.js'
+
+const CACHE_ROOT = sanitizePath(`${process.cwd()}/cache`)
 
 class Cache {
   /**
@@ -27,7 +29,7 @@ class Cache {
    * If a path is provided, it will be used as the cache file path.
    */
   constructor(path = null, logger) {
-    this.#path = sanitizePath(path || `${process.cwd()}/cache/report.json`)
+    this.#path = this.#resolveCachePath(path || `${CACHE_ROOT}/report.json`)
     this.#logger = logger
   }
 
@@ -44,7 +46,24 @@ class Cache {
    * @param {string} newPath - The new cache path to set
    */
   set path(newPath) {
-    this.#path = sanitizePath(newPath)
+    this.#path = this.#resolveCachePath(newPath)
+  }
+
+  /**
+   * Resolves and validates a cache path to ensure it stays within CACHE_ROOT.
+   * @param {string} inputPath - Candidate cache file path
+   * @returns {string} Safe absolute cache path
+   * @throws {Error} If path is outside of cache root
+   */
+  #resolveCachePath(inputPath) {
+    const resolvedPath = sanitizePath(inputPath)
+    const relativePath = path.relative(CACHE_ROOT, resolvedPath)
+
+    if (relativePath.startsWith('..') || path.isAbsolute(relativePath)) {
+      throw new Error(`Cache path must be within ${CACHE_ROOT}`)
+    }
+
+    return resolvedPath
   }
 
   /**
@@ -76,8 +95,9 @@ class Cache {
    */
   async load() {
     try {
-      const data = await readFile(this.#path, 'utf-8')
-      this.#logger.debug(`Cache loaded from ${this.#path}`)
+      const safePath = sanitizePath(this.#path)
+      const data = await readFile(safePath, 'utf-8')
+      this.#logger.debug(`Cache loaded from ${safePath}`)
 
       return JSON.parse(data)
     } catch (error) {
@@ -110,8 +130,9 @@ class Cache {
    */
   async exists() {
     try {
-      await access(this.#path)
-      this.#logger.debug(`Cache file exists at ${this.#path}`)
+      const safePath = sanitizePath(this.#path)
+      await access(safePath)
+      this.#logger.debug(`Cache file exists at ${safePath}`)
 
       return true
     } catch {
