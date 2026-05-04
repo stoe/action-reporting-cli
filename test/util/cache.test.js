@@ -3,13 +3,28 @@
  */
 import {jest} from '@jest/globals'
 
+// Create mock functions for fs/promises
+const mockAccess = jest.fn()
+const mockMkdir = jest.fn()
+const mockReadFile = jest.fn()
+const mockWriteFile = jest.fn()
+const mockUnlink = jest.fn()
+
+// Mock fs/promises module using unstable_mockModule for ESM support
+jest.unstable_mockModule('fs/promises', () => ({
+  access: mockAccess,
+  mkdir: mockMkdir,
+  readFile: mockReadFile,
+  writeFile: mockWriteFile,
+  unlink: mockUnlink,
+}))
+
 /**
  * Unit tests for the cache utility class.
  */
-import cacheInstance from '../../src/util/cache.js'
+const {default: cacheInstance} = await import('../../src/util/cache.js')
 
 import mockLog from '@mocks/util/log.js'
-import promises from '@mocks/fs.js'
 
 let logger
 
@@ -21,6 +36,13 @@ describe('cache', () => {
     // Reset the logger before each test
     mockLog._reset() // Reset the mock log state
     logger = mockLog('test', 'test-token', true)
+
+    // Default mock behavior (success)
+    mockAccess.mockResolvedValue(undefined)
+    mockMkdir.mockResolvedValue(undefined)
+    mockReadFile.mockResolvedValue('{}')
+    mockWriteFile.mockResolvedValue(undefined)
+    mockUnlink.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -70,9 +92,12 @@ describe('cache', () => {
      */
     test('cache methods should work correctly', async () => {
       const cache = cacheInstance(null, logger)
+      const data = {key: 'value'}
+
+      // Configure readFile to return saved data on first call, then fail
+      mockReadFile.mockResolvedValueOnce(JSON.stringify(data)).mockRejectedValueOnce(new Error('File not found'))
 
       // Test save method
-      const data = {key: 'value'}
       await expect(cache.save(data)).resolves.toEqual(true)
 
       // Test load method
@@ -99,12 +124,12 @@ describe('cache', () => {
     test('getter and setter for path property should work correctly', () => {
       const cache = cacheInstance(null, logger)
       const initialPath = cache.path
-      const newPath = '/new/path/to/cache.json'
+      const newPath = `${process.cwd()}/cache/new-path.json`
 
       // Test getter - path is sanitized (resolved) on construction
       expect(initialPath).toBe(`${process.cwd()}/cache/report.json`)
 
-      // Test setter - path is sanitized (resolved)
+      // Test setter - path stays within CACHE_ROOT
       cache.path = newPath
       expect(cache.path).toBe(newPath)
     })
@@ -128,7 +153,7 @@ describe('cache', () => {
       const cache = cacheInstance(null, logger)
 
       // Mock writeFile to throw an error
-      jest.spyOn(promises, 'writeFile').mockImplementation(() => {
+      mockWriteFile.mockImplementation(() => {
         throw new Error('Mock save error')
       })
 
@@ -144,7 +169,7 @@ describe('cache', () => {
       const cache = cacheInstance(null, logger)
 
       // Mock unlink to throw an error
-      jest.spyOn(promises, 'unlink').mockImplementation(() => {
+      mockUnlink.mockImplementation(() => {
         throw new Error('Mock clear error')
       })
 
@@ -159,7 +184,7 @@ describe('cache', () => {
       const cache = cacheInstance(null, logger)
 
       // Mock access to throw an error indicating file does not exist
-      jest.spyOn(promises, 'access').mockImplementation(() => {
+      mockAccess.mockImplementation(() => {
         throw new Error('File does not exist')
       })
 
