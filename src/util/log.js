@@ -139,14 +139,8 @@ export class Log {
       const clone = Array.isArray(value) ? [...value] : {...value}
 
       // Use Object.keys() to iterate only own enumerable properties
-      // and guard against prototype pollution via __proto__/constructor
       const keys = Array.isArray(clone) ? clone.keys() : Object.keys(clone)
       for (const key of keys) {
-        // Skip prototype-pollution keys
-        if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
-          continue
-        }
-
         // Special case for property named 'token'
         if (key === 'token' && typeof clone[key] === 'string') {
           clone[key] = '***'
@@ -157,8 +151,12 @@ export class Log {
         if (typeof clone[key] === 'string' && this.#token && clone[key].includes(this.#token)) {
           clone[key] = clone[key].replace(new RegExp(this.escapeRegExp(this.#token), 'g'), '***')
         }
-        // Recursively process nested objects
+        // Recursively process nested objects, but skip prototype-pollution
+        // vectors to avoid writing into __proto__/constructor/prototype sinks
         else if (typeof clone[key] === 'object' && clone[key] !== null) {
+          if (key === '__proto__' || key === 'constructor' || key === 'prototype') {
+            continue
+          }
           clone[key] = this.maskSensitive(clone[key])
         }
       }

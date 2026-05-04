@@ -1,4 +1,5 @@
 import {access, mkdir, readFile, unlink, writeFile} from 'fs/promises'
+import {dirname} from 'node:path'
 import {sanitizePath} from './path.js'
 
 class Cache {
@@ -54,8 +55,9 @@ class Cache {
    */
   async save(data) {
     try {
-      await mkdir(`${process.cwd()}/cache`, {recursive: true})
-      this.#logger.debug(`Creating cache directory at ${process.cwd()}/cache`)
+      const dir = dirname(this.#path)
+      await mkdir(dir, {recursive: true})
+      this.#logger.debug(`Creating cache directory at ${dir}`)
 
       await writeFile(this.#path, JSON.stringify(data, null, 2))
       this.#logger.debug(`Cache saved to ${this.#path}`)

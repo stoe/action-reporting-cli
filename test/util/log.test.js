@@ -230,8 +230,8 @@ describe('Log security', () => {
       const result = l.maskSensitive(input)
 
       expect(result.normal).toBe('***')
-      // constructor key should be left untouched
-      expect(result.constructor).toBe('secret123')
+      // constructor key string value should still be masked for security
+      expect(result.constructor).toBe('***')
     })
 
     test('should still mask tokens in regular properties', () => {
