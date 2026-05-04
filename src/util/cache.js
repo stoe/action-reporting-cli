@@ -76,8 +76,9 @@ class Cache {
    */
   async load() {
     try {
-      const data = await readFile(this.#path, 'utf-8')
-      this.#logger.debug(`Cache loaded from ${this.#path}`)
+      const safePath = sanitizePath(this.#path)
+      const data = await readFile(safePath, 'utf-8')
+      this.#logger.debug(`Cache loaded from ${safePath}`)
 
       return JSON.parse(data)
     } catch (error) {
@@ -110,8 +111,9 @@ class Cache {
    */
   async exists() {
     try {
-      await access(this.#path)
-      this.#logger.debug(`Cache file exists at ${this.#path}`)
+      const safePath = sanitizePath(this.#path)
+      await access(safePath)
+      this.#logger.debug(`Cache file exists at ${safePath}`)
 
       return true
     } catch {
