@@ -71,9 +71,9 @@
     "globals": "^17.6.0",
     "husky": "^9.1.7",
     "jest": "^30.3.0",
-    "lint-staged": "^16.4.0",
+    "lint-staged": "^17.0.7",
     "prettier": "^3.8.3",
-    "sinon": "^21.1.2"
+    "sinon": "^22.0.0"
   },
   "husky": {
     "hooks": {
