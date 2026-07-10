@@ -1,32 +1,42 @@
 version: 2
 updates:
-  - package-ecosystem: 'github-actions'
-    directory: '/'
+  - package-ecosystem: github-actions
+    directory: /
     schedule:
-      interval: 'monthly'
+      interval: monthly
     groups:
       actions:
         patterns:
-          - '*'
+          - "*"
     commit-message:
-      prefix: '⬆️ action'
+      prefix: ⬆️ action
     labels:
-      - 'github-action :robot:'
-
-  - package-ecosystem: 'npm'
-    directory: '/'
+      - "github-action :robot:"
+  - package-ecosystem: npm
+    directory: /
     schedule:
-      interval: 'monthly'
+      interval: monthly
     groups:
-      npm-production:
-        patterns:
-          - '*'
-        dependency-type: 'production'
-      npm-development:
-        patterns:
-          - '*'
-        dependency-type: 'development'
+      npm:
+        dependency-type: production
+      npm-dev:
+        dependency-type: development
     commit-message:
-      prefix: '⬆️ npm'
+      prefix: ⬆️ npm
+      include: scope
     labels:
-      - 'dependency :robot:'
+      - "dependency :robot:"
+      - javascript
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      docker:
+        patterns:
+          - "*"
+    commit-message:
+      prefix: ⬆️ docker
+    labels:
+      - "dependency :robot:"
+      - docker
