@@ -53,7 +53,7 @@
     "@octokit/core": "^7.0.6",
     "@octokit/plugin-paginate-rest": "^14.0.0",
     "@octokit/plugin-throttling": "^11.0.3",
-    "chalk": "^4.1.2, <6",
+    "chalk": "^4.1.2, <7",
     "csv": "^6.6.0",
     "got": "^15.0.7",
     "js-yaml": "^5.2.0",
